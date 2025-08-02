@@ -1,0 +1,122 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Udupi POS - Restaurant Billing System</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/billing.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="pos-header">
+            <h1>Udupi Restaurant POS</h1>
+            <div class="header-info">
+                <span id="current-date"></span>
+                <span id="current-time"></span>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="main-content">
+            <!-- Service Type Selector (Default) -->
+            <div id="service-selector-screen" class="screen active">
+                <h2>Select Service Type</h2>
+                <div class="service-type-grid">
+                    <div class="service-card" id="table-service-btn">
+                        <div class="service-icon">🍽️</div>
+                        <div class="service-title">Table Service</div>
+                        <div class="service-description">Dine-in with table assignments</div>
+                    </div>
+                    <div class="service-card" id="counter-service-btn">
+                        <div class="service-icon">🥡</div>
+                        <div class="service-title">Counter Billing</div>
+                        <div class="service-description">Takeaway orders with ₹5 discount per item</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Selector Screen -->
+            <div id="table-selector-screen" class="screen">
+                <div class="screen-header">
+                    <button id="back-to-service" class="btn btn-secondary">← Back to Service Types</button>
+                    <h2>Select Table</h2>
+                </div>
+                <div id="tables-grid" class="tables-grid">
+                    <!-- Tables will be dynamically generated -->
+                </div>
+            </div>
+
+            <!-- Counter Selector Screen -->
+            <div id="counter-selector-screen" class="screen">
+                <div class="screen-header">
+                    <button id="back-to-service-counter" class="btn btn-secondary">← Back to Service Types</button>
+                    <h2>Select Counter</h2>
+                </div>
+                <div id="counters-grid" class="counters-grid">
+                    <!-- Counters will be dynamically generated -->
+                </div>
+            </div>
+
+            <!-- Billing Screen (Hidden by default) -->
+            <div id="billing-screen" class="screen">
+                <div class="billing-header">
+                    <button id="back-to-tables" class="btn btn-secondary">← Back</button>
+                    <h2 id="current-location">Table 1</h2>
+                    <div class="billing-mode-indicator">
+                        <span id="billing-mode-text">Table Service</span>
+                    </div>
+                    <div class="billing-actions">
+                        <button id="print-order" class="btn btn-success">🖨 Print</button>
+                    </div>
+                </div>
+                
+                <div class="billing-content">
+                    <!-- Menu Items Grid -->
+                    <div class="menu-section">
+                        <h3>Menu Items</h3>
+                        
+                        <!-- Search Bar -->
+                        <div class="search-container">
+                            <input type="text" id="menu-search" placeholder="🔍 Search menu items... (Press / for quick search)" autocomplete="off">
+                            <div id="search-results" class="search-results-dropdown">
+                                <!-- Search results will appear here -->
+                            </div>
+                        </div>
+                        
+                        <div id="menu-grid" class="menu-grid">
+                            <!-- Menu items will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Order Summary -->
+                    <div class="order-section">
+                        <h3>Current Order</h3>
+                        <div id="order-items" class="order-items">
+                            <!-- Order items will appear here -->
+                        </div>
+                        <div class="order-total">
+                            <div class="total-line">
+                                <span>Subtotal:</span>
+                                <span id="subtotal">₹0.00</span>
+                            </div>
+                            <div class="total-line">
+                                <span>Tax (5%):</span>
+                                <span id="tax">₹0.00</span>
+                            </div>
+                            <div class="total-line total-final">
+                                <span>Total:</span>
+                                <span id="total">₹0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="renderer.js"></script>
+</body>
+</html>

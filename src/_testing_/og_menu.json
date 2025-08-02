@@ -1,0 +1,119 @@
+{
+  "restaurant": {
+    "name": "UDUPI KRISHNAM VEG",
+    "contact": "+91 12345 67890",
+    "address": "Bengaluru - Chennai Hwy, Konnappana Agrahara, Electronic City, Bengaluru, Karnataka - 560100",
+    "gstin": "A unit of Salt and Pepper",
+    "fssai": "12345678901234"
+  },
+  "items": [
+    {
+      "id": 1,
+      "name": "Masala Dosa",
+      "price": 80,
+      "category": "South Indian"
+    },
+    {
+      "id": 2,
+      "name": "Plain Dosa",
+      "price": 60,
+      "category": "South Indian"
+    },
+    {
+      "id": 3,
+      "name": "Rava Dosa",
+      "price": 90,
+      "category": "South Indian"
+    },
+    {
+      "id": 4,
+      "name": "Set Dosa",
+      "price": 70,
+      "category": "South Indian"
+    },
+    {
+      "id": 5,
+      "name": "Idli Sambar (2 pcs)",
+      "price": 50,
+      "category": "South Indian"
+    },
+    {
+      "id": 6,
+      "name": "Vada Sambar (2 pcs)",
+      "price": 60,
+      "category": "South Indian"
+    },
+    {
+      "id": 7,
+      "name": "Idli Vada Combo",
+      "price": 65,
+      "category": "South Indian"
+    },
+    {
+      "id": 8,
+      "name": "Upma",
+      "price": 45,
+      "category": "South Indian"
+    },
+    {
+      "id": 9,
+      "name": "Poori Bhaji",
+      "price": 70,
+      "category": "North Indian"
+    },
+    {
+      "id": 10,
+      "name": "Chapati (2 pcs)",
+      "price": 30,
+      "category": "North Indian"
+    },
+    {
+      "id": 11,
+      "name": "Dal Rice",
+      "price": 85,
+      "category": "North Indian"
+    },
+    {
+      "id": 12,
+      "name": "Sambar Rice",
+      "price": 75,
+      "category": "South Indian"
+    },
+    {
+      "id": 13,
+      "name": "Curd Rice",
+      "price": 55,
+      "category": "South Indian"
+    },
+    {
+      "id": 14,
+      "name": "Tea",
+      "price": 15,
+      "category": "Beverages"
+    },
+    {
+      "id": 15,
+      "name": "Coffee",
+      "price": 20,
+      "category": "Beverages"
+    },
+    {
+      "id": 16,
+      "name": "Lassi",
+      "price": 35,
+      "category": "Beverages"
+    },
+    {
+      "id": 17,
+      "name": "Fresh Lime Water",
+      "price": 25,
+      "category": "Beverages"
+    },
+    {
+      "id": 18,
+      "name": "Buttermilk",
+      "price": 20,
+      "category": "Beverages"
+    }
+  ]
+}

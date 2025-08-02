@@ -1,0 +1,1169 @@
+{
+  "restaurant": {
+    "name": "UDUPI KRISHNAM VEG",
+    "contact": "+91 12345 67890",
+    "address": "Bengaluru - Chennai Hwy, Konnappana Agrahara, Electronic City, Bengaluru, Karnataka - 560100",
+    "gstin": "A unit of Salt and Pepper",
+    "fssai": "12345678901234"
+  },
+  "items": [
+   {
+    "id": 1,
+    "name": "Veg Fried Rice",
+    "price": 80,
+    "category": "Rice"
+   },
+  {
+    "id": 2,
+    "name": "Veg Biriyani",
+    "price": 120,
+    "category": "Rice"
+  },
+  {
+    "id": 3,
+    "name": "Veg Tawa Palav",
+    "price": 120,
+    "category": "Rice"
+  },
+  {
+    "id": 4,
+    "name": "Veg Shezwan Fried Rice",
+    "price": 90,
+    "category": "Rice"
+  },
+  {
+    "id": 5,
+    "name": "Muhsroom Fried Rice",
+    "price": 95,
+    "category": "Rice"
+  },
+  {
+    "id": 6,
+    "name": "M.room Szw Fried Rice",
+    "price": 100,
+    "category": "Rice"
+  },
+  {
+    "id": 7,
+    "name": "Mushroom Biriyani",
+    "price": 130,
+    "category": "Rice"
+  },
+  {
+    "id": 8,
+    "name": "Mushroom Tawa Palav",
+    "price": 130,
+    "category": "Rice"
+  },
+  {
+    "id": 9,
+    "name": "Paneer Fried Rice",
+    "price": 105,
+    "category": "Rice"
+  },
+  {
+    "id": 10,
+    "name": "Panner Szw Fried Rice",
+    "price": 115,
+    "category": "Rice"
+  },
+  {
+    "id": 11,
+    "name": "Paneer Tawa Palav",
+    "price": 145,
+    "category": "Rice"
+  },
+  {
+    "id": 12,
+    "name": "Paneer Biriyani",
+    "price": 145,
+    "category": "Rice"
+  },
+  {
+    "id": 13,
+    "name": "Jeera Rice",
+    "price": 80,
+    "category": "Rice"
+  },
+  {
+    "id": 14,
+    "name": "Ghee Rice",
+    "price": 90,
+    "category": "Rice"
+  },
+  {
+    "id": 15,
+    "name": "Palak Rice",
+    "price": 115,
+    "category": "Rice"
+  },
+  {
+    "id": 16,
+    "name": "Dal Kichidi",
+    "price": 95,
+    "category": "Rice"
+  },
+  {
+    "id": 17,
+    "name": "Palak Kichidi",
+    "price": 90,
+    "category": "Rice"
+  },
+  {
+    "id": 18,
+    "name": "Navaratna Palav",
+    "price": 140,
+    "category": "Rice"
+  },
+  {
+    "id": 19,
+    "name": "Veg Hydrabadi Biriyani",
+    "price": 130,
+    "category": "Rice"
+  },
+  {
+    "id": 20,
+    "name": "Hongkong Fried Rice",
+    "price": 110,
+    "category": "Rice"
+  },
+  {
+    "id": 21,
+    "name": "Shangai Fried Rice",
+    "price": 100,
+    "category": "Rice"
+  },
+  {
+    "id": 22,
+    "name": "Triple Fried Rice",
+    "price": 115,
+    "category": "Rice"
+  },
+  {
+    "id": 23,
+    "name": "Tawa Fried Rice",
+    "price": 115,
+    "category": "Rice"
+  },
+  {
+    "id": 24,
+    "name": "Baby Corn Crispy",
+    "price": 125,
+    "category": "Starters"
+  },
+  {
+    "id": 25,
+    "name": "Paneer Tikka",
+    "price": 170,
+    "category": "Starters"
+  },
+  {
+    "id": 26,
+    "name": "Paneer Tiranga",
+    "price": 180,
+    "category": "Starters"
+  },
+  {
+    "id": 27,
+    "name": "Babycorn Kurkure",
+    "price": 125,
+    "category": "Starters"
+  },
+  {
+    "id": 28,
+    "name": "Paneer Kabab",
+    "price": 145,
+    "category": "Starters"
+  },
+  {
+    "id": 29,
+    "name": "Gobi Manchurian",
+    "price": 85,
+    "category": "Starters"
+  },
+  {
+    "id": 30,
+    "name": "Paneer Manchurian",
+    "price": 125,
+    "category": "Starters"
+  },
+  {
+    "id": 31,
+    "name": "Mushroom Manchurian",
+    "price": 100,
+    "category": "Starters"
+  },
+  {
+    "id": 32,
+    "name": "Paneer Chilly",
+    "price": 130,
+    "category": "Starters"
+  },
+  {
+    "id": 33,
+    "name": "Mushroom Chilly",
+    "price": 110,
+    "category": "Starters"
+  },
+  {
+    "id": 34,
+    "name": "Babycorn Chilly",
+    "price": 100,
+    "category": "Starters"
+  },
+  {
+    "id": 35,
+    "name": "Babycorn Manchuri",
+    "price": 95,
+    "category": "Starters"
+  },
+  {
+    "id": 36,
+    "name": "Paneer Pepper Dry",
+    "price": 135,
+    "category": "Starters"
+  },
+  {
+    "id": 37,
+    "name": "Mushroom Pepper Dry",
+    "price": 125,
+    "category": "Starters"
+  },
+  {
+    "id": 38,
+    "name": "Veg Ball Manchurian",
+    "price": 100,
+    "category": "Starters"
+  },
+  {
+    "id": 39,
+    "name": "Mushroom Kabab",
+    "price": 125,
+    "category": "Starters"
+  },
+  {
+    "id": 40,
+    "name": "Paneer 65",
+    "price": 140,
+    "category": "Starters"
+  },
+  {
+    "id": 41,
+    "name": "Gobi 65",
+    "price": 95,
+    "category": "Starters"
+  },
+  {
+    "id": 42,
+    "name": "Mix Tikka",
+    "price": 135,
+    "category": "Starters"
+  },
+  {
+    "id": 43,
+    "name": "Masala Papad",
+    "price": 45,
+    "category": "Starters"
+  },
+  {
+    "id": 44,
+    "name": "Mushroom Daniya",
+    "price": 135,
+    "category": "Starters"
+  },
+  {
+    "id": 45,
+    "name": "Paneer Sate",
+    "price": 145,
+    "category": "Starters"
+  },
+  {
+    "id": 46,
+    "name": "Patak Paneer",
+    "price": 160,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 47,
+    "name": "Paneer Butter Masala",
+    "price": 165,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 48,
+    "name": "Paneer Kadai",
+    "price": 170,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 49,
+    "name": "Paneer Do Pyaza",
+    "price": 170,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 50,
+    "name": "Mushroom Masala",
+    "price": 140,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 51,
+    "name": "Mushroom Kadai",
+    "price": 145,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 52,
+    "name": "Mix Veg Kadai",
+    "price": 150,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 53,
+    "name": "Veg Kolapuri",
+    "price": 165,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 54,
+    "name": "Veg Hydrabadi",
+    "price": 170,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 55,
+    "name": "Paneer Masala",
+    "price": 170,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 56,
+    "name": "Malai Kofta",
+    "price": 170,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 57,
+    "name": "Paneer Malai Kofta",
+    "price": 185,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 58,
+    "name": "Dal Makani",
+    "price": 100,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 59,
+    "name": "Dal Kollapuri",
+    "price": 110,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 60,
+    "name": "Dal Tadka",
+    "price": 95,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 61,
+    "name": "Kaju Masala",
+    "price": 180,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 62,
+    "name": "Veg Kofta",
+    "price": 165,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 63,
+    "name": "Alu Jeera Dry",
+    "price": 135,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 64,
+    "name": "Alu Gobi Dry",
+    "price": 140,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 65,
+    "name": "Channa Paneer Masala",
+    "price": 150,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 66,
+    "name": "Navaratna Kurma",
+    "price": 160,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 67,
+    "name": "Green Peas Masala",
+    "price": 135,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 68,
+    "name": "Capsicum Masala",
+    "price": 135,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 69,
+    "name": "Tomato Curry",
+    "price": 125,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 70,
+    "name": "Alu Methi Curry",
+    "price": 130,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 71,
+    "name": "Kaju Paneer Masala",
+    "price": 185,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 72,
+    "name": "Paneer Burji",
+    "price": 165,
+    "category": "Indian Curry"
+  },
+  {
+    "id": 73,
+    "name": "Roti",
+    "price": 25,
+    "category": "Roti"
+  },
+  {
+    "id": 74,
+    "name": "Butter Roti",
+    "price": 30,
+    "category": "Roti"
+  },
+  {
+    "id": 75,
+    "name": "Naan",
+    "price": 30,
+    "category": "Roti"
+  },
+  {
+    "id": 76,
+    "name": "Butter Naan",
+    "price": 35,
+    "category": "Roti"
+  },
+  {
+    "id": 77,
+    "name": "Butter Kulcha",
+    "price": 40,
+    "category": "Roti"
+  },
+  {
+    "id": 78,
+    "name": "Garlic Kulcha",
+    "price": 40,
+    "category": "Roti"
+  },
+  {
+    "id": 79,
+    "name": "Masala Kulcha",
+    "price": 40,
+    "category": "Roti"
+  },
+  {
+    "id": 80,
+    "name": "Paneer Kulcha",
+    "price": 50,
+    "category": "Roti"
+  },
+  {
+    "id": 81,
+    "name": "Lacha Parota",
+    "price": 35,
+    "category": "Roti"
+  },
+  {
+    "id": 82,
+    "name": "Cheese Naan",
+    "price": 50,
+    "category": "Roti"
+  },
+  {
+    "id": 83,
+    "name": "Chilly Cheese Naan",
+    "price": 50,
+    "category": "Roti"
+  },
+  {
+    "id": 84,
+    "name": "Single Idly",
+    "price": 20,
+    "category": "Breakfast"
+  },
+  {
+    "id": 85,
+    "name": "Idly (2no)",
+    "price": 35,
+    "category": "Breakfast"
+  },
+  {
+    "id": 86,
+    "name": "Single Idly Vada",
+    "price": 45,
+    "category": "Breakfast"
+  },
+  {
+    "id": 87,
+    "name": "Idly Vada",
+    "price": 55,
+    "category": "Breakfast"
+  },
+  {
+    "id": 88,
+    "name": "Single Vada",
+    "price": 25,
+    "category": "Breakfast"
+  },
+  {
+    "id": 89,
+    "name": "Thatte Idly 2nos",
+    "price": 50,
+    "category": "Breakfast"
+  },
+  {
+    "id": 90,
+    "name": "Thatte Idly Single",
+    "price": 25,
+    "category": "Breakfast"
+  },
+  {
+    "id": 91,
+    "name": "Pudi Idly",
+    "price": 30,
+    "category": "Breakfast"
+  },
+  {
+    "id": 92,
+    "name": "Ghee Pudi Idly",
+    "price": 40,
+    "category": "Breakfast"
+  },
+  {
+    "id": 93,
+    "name": "Rava Idly",
+    "price": 40,
+    "category": "Breakfast"
+  },
+  {
+    "id": 94,
+    "name": "Button Idly",
+    "price": 50,
+    "category": "Breakfast"
+  },
+  {
+    "id": 95,
+    "name": "Khara Bath",
+    "price": 25,
+    "category": "Breakfast"
+  },
+  {
+    "id": 96,
+    "name": "Kesari Bath",
+    "price": 25,
+    "category": "Breakfast"
+  },
+  {
+    "id": 97,
+    "name": "Chow Chow Bath",
+    "price": 45,
+    "category": "Breakfast"
+  },
+  {
+    "id": 98,
+    "name": "Rice Bath",
+    "price": 45,
+    "category": "Breakfast"
+  },
+  {
+    "id": 99,
+    "name": "Bisibele Bath",
+    "price": 45,
+    "category": "Breakfast"
+  },
+  {
+    "id": 100,
+    "name": "Pongal",
+    "price": 45,
+    "category": "Breakfast"
+  },
+  {
+    "id": 101,
+    "name": "Mangalore Buns 1pc",
+    "price": 30,
+    "category": "Breakfast"
+  },
+  {
+    "id": 102,
+    "name": "Mangalore Buns 2pc",
+    "price": 55,
+    "category": "Breakfast"
+  },
+  {
+    "id": 103,
+    "name": "Mangalore Bonda",
+    "price": 35,
+    "category": "Breakfast"
+  },
+  {
+    "id": 104,
+    "name": "Poori",
+    "price": 50,
+    "category": "Breakfast"
+  },
+  {
+    "id": 105,
+    "name": "Savige Bath",
+    "price": 45,
+    "category": "Breakfast"
+  },
+  {
+    "id": 106,
+    "name": "Curd Vada",
+    "price": 35,
+    "category": "Breakfast"
+  },
+  {
+    "id": 107,
+    "name": "Pakoda",
+    "price": 35,
+    "category": "Breakfast"
+  },
+  {
+    "id": 108,
+    "name": "Bajji",
+    "price": 35,
+    "category": "Breakfast"
+  },
+  {
+    "id": 109,
+    "name": "Vada 2pc",
+    "price": 50,
+    "category": "Breakfast"
+  },
+  {
+    "id": 110,
+    "name": "Masala Vada",
+    "price": 15,
+    "category": "Breakfast"
+  },
+  {
+    "id": 111,
+    "name": "Maddur Vada",
+    "price": 10,
+    "category": "Breakfast"
+  },
+  {
+    "id": 112,
+    "name": "Masala Dosa",
+    "price": 55,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 113,
+    "name": "Plain Dosa",
+    "price": 45,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 114,
+    "name": "Set Dosa",
+    "price": 55,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 115,
+    "name": "Kali Dosa",
+    "price": 50,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 116,
+    "name": "Rava Dosa",
+    "price": 60,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 117,
+    "name": "Paper Plain",
+    "price": 55,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 118,
+    "name": "Paper Masala",
+    "price": 65,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 119,
+    "name": "Ghee Masala",
+    "price": 65,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 120,
+    "name": "Ghee Pudi Plain",
+    "price": 65,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 121,
+    "name": "Ghee Pudi Masala",
+    "price": 70,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 122,
+    "name": "Open Butter Masala",
+    "price": 70,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 123,
+    "name": "Andhra Onion Masala",
+    "price": 75,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 124,
+    "name": "Neer Dosa",
+    "price": 65,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 125,
+    "name": "Ragi Dosa",
+    "price": 55,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 126,
+    "name": "Rava Msala",
+    "price": 65,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 127,
+    "name": "Rava Onion Masala",
+    "price": 75,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 128,
+    "name": "Onion Uttappam",
+    "price": 55,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 129,
+    "name": "Butter Masala",
+    "price": 60,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 130,
+    "name": "Mysore Masala Dosa",
+    "price": 70,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 131,
+    "name": "Paneer Masala Dosa",
+    "price": 70,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 132,
+    "name": "Schezwan Masala Dosa",
+    "price": 70,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 133,
+    "name": "Cheese Masala Dosa",
+    "price": 75,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 134,
+    "name": "Cheese Plain Dosa",
+    "price": 70,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 135,
+    "name": "U.K Special Dosa",
+    "price": 75,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 136,
+    "name": "Akki Roti",
+    "price": 55,
+    "category": "Dosa Special"
+  },
+  {
+    "id": 137,
+    "name": "South Meals",
+    "price": 80,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 138,
+    "name": "Mini Meals",
+    "price": 50,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 139,
+    "name": "North Meals",
+    "price": 110,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 140,
+    "name": "Choe Batura",
+    "price": 70,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 141,
+    "name": "Curd Rice",
+    "price": 50,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 142,
+    "name": "Roti Curry",
+    "price": 70,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 143,
+    "name": "Naan Curry",
+    "price": 75,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 144,
+    "name": "Butter Roti Curry",
+    "price": 75,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 145,
+    "name": "Butter Naan Curry",
+    "price": 80,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 146,
+    "name": "Masala Kulcha Curry",
+    "price": 85,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 147,
+    "name": "Kulcha Curry",
+    "price": 80,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 148,
+    "name": "Garlic Naan Curry",
+    "price": 80,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 149,
+    "name": "Aloo Parota",
+    "price": 50,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 150,
+    "name": "Paneer Parota",
+    "price": 65,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 151,
+    "name": "Onion Parota",
+    "price": 55,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 152,
+    "name": "Garlic Kulcha Curry",
+    "price": 85,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 153,
+    "name": "Paneer Cheese Parota",
+    "price": 80,
+    "category": "Meals/Roti Curry"
+  },
+  {
+    "id": 154,
+    "name": "Veg Noodles",
+    "price": 80,
+    "category": "Noodles"
+  },
+  {
+    "id": 155,
+    "name": "Hong Kong Noodles",
+    "price": 100,
+    "category": "Noodles"
+  },
+  {
+    "id": 156,
+    "name": "Veg Szn. Noodles",
+    "price": 80,
+    "category": "Noodles"
+  },
+  {
+    "id": 157,
+    "name": "Shangai Noodles",
+    "price": 100,
+    "category": "Noodles"
+  },
+  {
+    "id": 158,
+    "name": "Veg Hakka Noodles",
+    "price": 90,
+    "category": "Noodles"
+  },
+  {
+    "id": 159,
+    "name": "Veg Szw Noodles",
+    "price": 90,
+    "category": "Noodles"
+  },
+  {
+    "id": 160,
+    "name": "Paneer Noodles",
+    "price": 105,
+    "category": "Noodles"
+  },
+  {
+    "id": 161,
+    "name": "Paneer Szn Noodles",
+    "price": 115,
+    "category": "Noodles"
+  },
+  {
+    "id": 162,
+    "name": "Mushroom Noodles",
+    "price": 90,
+    "category": "Noodles"
+  },
+  {
+    "id": 163,
+    "name": "M.room Szn. Noodles",
+    "price": 160,
+    "category": "Noodles"
+  },
+  {
+    "id": 164,
+    "name": "Gobi Manchuri Noodles",
+    "price": 105,
+    "category": "Noodles"
+  },
+  {
+    "id": 165,
+    "name": "U.K Special Noodles",
+    "price": 110,
+    "category": "Noodles"
+  },
+  {
+    "id": 166,
+    "name": "Chilly Garlic Noodles",
+    "price": 100,
+    "category": "Noodles"
+  },
+  {
+    "id": 167,
+    "name": "Tea",
+    "price": 15,
+    "category": "Tea/Coffee"
+  },
+  {
+    "id": 168,
+    "name": "Filter Coffee",
+    "price": 18,
+    "category": "Tea/Coffee"
+  },
+  {
+    "id": 169,
+    "name": "Ginger Tea",
+    "price": 18,
+    "category": "Tea/Coffee"
+  },
+  {
+    "id": 170,
+    "name": "Lemon Tea",
+    "price": 18,
+    "category": "Tea/Coffee"
+  },
+  {
+    "id": 171,
+    "name": "Elachi Tea",
+    "price": 18,
+    "category": "Tea/Coffee"
+  },
+  {
+    "id": 172,
+    "name": "Boost",
+    "price": 18,
+    "category": "Tea/Coffee"
+  },
+  {
+    "id": 173,
+    "name": "Horlicks",
+    "price": 18,
+    "category": "Tea/Coffee"
+  },
+  {
+    "id": 174,
+    "name": "Badam",
+    "price": 18,
+    "category": "Tea/Coffee"
+  },
+  {
+    "id": 175,
+    "name": "Kashaya",
+    "price": 18,
+    "category": "Tea/Coffee"
+  },
+  {
+    "id": 176,
+    "name": "Jaggery Tea",
+    "price": 18,
+    "category": "Tea/Coffee"
+  },
+  {
+    "id": 177,
+    "name": "Jaggery Coffee",
+    "price": 20,
+    "category": "Tea/Coffee"
+  },
+  {
+    "id": 178,
+    "name": "Lime Juice",
+    "price": 30,
+    "category": "Juice/Milkshake"
+  },
+  {
+    "id": 179,
+    "name": "Lime Soda",
+    "price": 35,
+    "category": "Juice/Milkshake"
+  },
+  {
+    "id": 180,
+    "name": "Mosambi Juice",
+    "price": 45,
+    "category": "Juice/Milkshake"
+  },
+  {
+    "id": 181,
+    "name": "Orange",
+    "price": 45,
+    "category": "Juice/Milkshake"
+  },
+  {
+    "id": 182,
+    "name": "Apple Milkshake",
+    "price": 65,
+    "category": "Juice/Milkshake"
+  },
+  {
+    "id": 183,
+    "name": "Pineapple Juice",
+    "price": 50,
+    "category": "Juice/Milkshake"
+  },
+  {
+    "id": 184,
+    "name": "Watermelon Juice",
+    "price": 40,
+    "category": "Juice/Milkshake"
+  },
+  {
+    "id": 185,
+    "name": "Chickoo Milkshake",
+    "price": 55,
+    "category": "Juice/Milkshake"
+  },
+  {
+    "id": 186,
+    "name": "Butter Fruit Milkshake",
+    "price": 70,
+    "category": "Juice/Milkshake"
+  },
+  {
+    "id": 187,
+    "name": "Banana Milkshake",
+    "price": 50,
+    "category": "Juice/Milkshake"
+  },
+  {
+    "id": 188,
+    "name": "Muskmelon Shake",
+    "price": 50,
+    "category": "Juice/Milkshake"
+  },
+  {
+    "id": 189,
+    "name": "Butter Milk",
+    "price": 25,
+    "category": "Juice/Milkshake"
+  },
+  {
+    "id": 190,
+    "name": "Veg Manchow Soup",
+    "price": 55,
+    "category": "Soups"
+  },
+  {
+    "id": 191,
+    "name": "Veg Hot & Sauce Soup",
+    "price": 55,
+    "category": "Soups"
+  },
+  {
+    "id": 192,
+    "name": "Tomato Soup",
+    "price": 55,
+    "category": "Soups"
+  },
+  {
+    "id": 193,
+    "name": "Veg Coriander Soup",
+    "price": 55,
+    "category": "Soups"
+  }
+]
+}

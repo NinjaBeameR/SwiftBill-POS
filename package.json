@@ -1,0 +1,45 @@
+{
+  "name": "udupi-pos",
+  "version": "1.0.0",
+  "description": "Restaurant POS Billing Software",
+  "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_USERNAME/udupi-pos-system.git"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/udupi-pos-system#readme",
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/udupi-pos-system/issues"
+  },
+  "keywords": [
+    "pos",
+    "restaurant",
+    "billing",
+    "electron",
+    "thermal-printing",
+    "desktop-app"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.udupipos.app",
+    "productName": "Udupi POS",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules",
+      "!dist"
+    ]
+  }
+}

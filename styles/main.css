@@ -1,0 +1,325 @@
+/* Main styles for the POS system */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+    overflow: hidden;
+}
+
+#app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header Styles */
+.pos-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.pos-header h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.header-info {
+    display: flex;
+    gap: 20px;
+    font-size: 0.9rem;
+}
+
+/* Main Content */
+#main-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Screen Management */
+.screen {
+    display: none;
+    height: 100%;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.screen.active {
+    display: block;
+}
+
+/* Table Selector Styles */
+#table-selector-screen h2,
+#counter-selector-screen h2,
+#service-selector-screen h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #4a5568;
+    font-size: 1.5rem;
+}
+
+.screen-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+.screen-header h2 {
+    margin: 0;
+    flex: 1;
+    text-align: center;
+}
+
+/* Service Type Selector */
+.service-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.service-card {
+    background: white;
+    border-radius: 16px;
+    padding: 40px 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 3px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.service-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    border-color: #667eea;
+}
+
+.service-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.service-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 10px;
+}
+
+.service-description {
+    color: #6c757d;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.tables-grid,
+.counters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.table-card,
+.counter-card {
+    background: white;
+    border-radius: 12px;
+    padding: 30px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.table-card:hover,
+.table-card.hover,
+.counter-card:hover,
+.counter-card.hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-color: #667eea;
+}
+
+.table-card.active,
+.counter-card.active {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    color: white;
+    border-color: #ff6b6b;
+    position: relative;
+}
+
+.table-card.active::before,
+.counter-card.active::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #ff6b6b, #ff8e53, #ff6b6b);
+    border-radius: 14px;
+    z-index: -1;
+    animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.table-card.selected,
+.counter-card.selected {
+    transform: scale(0.95);
+    transition: transform 0.15s ease;
+}
+
+.table-number,
+.counter-number {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.table-status,
+.counter-status {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.table-card.active .table-status,
+.counter-card.active .counter-status {
+    opacity: 1;
+}
+
+.status-occupied {
+    font-weight: 600;
+    color: #fff;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.status-available {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.order-summary {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 5px 8px;
+    margin-top: 8px;
+    backdrop-filter: blur(5px);
+}
+
+.order-summary small {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #fff;
+    opacity: 0.95;
+}
+
+/* Button Styles */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a6fd8;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #218838;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .tables-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+    }
+    
+    .table-card {
+        padding: 20px 15px;
+    }
+    
+    .pos-header {
+        padding: 10px 15px;
+    }
+    
+    .pos-header h1 {
+        font-size: 1.4rem;
+    }
+    
+    .header-info {
+        gap: 10px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .tables-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .screen {
+        padding: 15px;
+    }
+    
+    .header-info {
+        flex-direction: column;
+        gap: 5px;
+        text-align: right;
+    }
+}
