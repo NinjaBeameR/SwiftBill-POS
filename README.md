@@ -78,18 +78,6 @@ A professional Point of Sale system built with Electron for restaurant operation
    npm start
    ```
 
-## 📋 Menu Categories
-
-- **Rice** (23 items) - Biriyani, Fried Rice, Specialty Rice
-- **Starters** (22 items) - Manchurian, Tikka, 65 varieties
-- **Indian Curry** (27 items) - Dal, Vegetable curries
-- **Roti** (10 items) - Naan, Kulcha, Parotta
-- **Breakfast** (28 items) - South Indian breakfast items
-- **Dosa Special** (25 items) - Various dosa preparations
-- **Noodles** (13 items) - Different noodle varieties
-- **Beverages** (23 items) - Tea, Coffee, Juices, Milkshakes
-- **Soups** (4 items) - Hot soup varieties
-
 ## ⌨️ Keyboard Shortcuts
 
 | Key | Action |
@@ -107,8 +95,6 @@ A professional Point of Sale system built with Electron for restaurant operation
 ### Supported Printers
 - Thermal receipt printers (80mm width)
 - USB, Network, and Bluetooth printers
-- Epson TM series
-- TVS printers
 - Generic POS printers
 
 ### Print Settings
@@ -116,15 +102,6 @@ A professional Point of Sale system built with Electron for restaurant operation
 - **203 DPI** resolution for thermal printers
 - **Enhanced fonts** (16px base) for better readability
 - **Professional formatting** with proper margins
-
-## 💼 Business Information
-
-The system is configured for:
-- **Business Name**: Udupi Krishnam Veg
-- **Location**: Electronic City, Bengaluru
-- **Contact**: 9535089587
-- **FSSAI**: 21224010001200
-- **Brand**: A Unit of SALT AND PEPPER
 
 ## 🔧 Development
 
@@ -158,8 +135,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support and questions:
 - Create an issue in this repository
-- Email: [your-email@example.com]
-
+- 
 ## 🙏 Acknowledgments
 
 - Built with Electron framework
