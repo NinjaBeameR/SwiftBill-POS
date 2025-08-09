@@ -5,11 +5,11 @@
   "main": "main.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR_USERNAME/udupi-pos-system.git"
+    "url": "git+https://github.com/NinjaBeameR/SwiftBill-POS.git"
   },
-  "homepage": "https://github.com/YOUR_USERNAME/udupi-pos-system#readme",
+  "homepage": "https://github.com/NinjaBeameR/SwiftBill-POS/readme",
   "bugs": {
-    "url": "https://github.com/YOUR_USERNAME/udupi-pos-system/issues"
+    "url": "https://github.com/NinjaBeameR/SwiftBill-POS/issues"
   },
   "keywords": [
     "pos",

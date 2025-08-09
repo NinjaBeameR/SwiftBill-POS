@@ -1,0 +1,82 @@
+name: Build and Release Udupi POS
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.3, v1.0.4, etc.
+  workflow_dispatch:  # Allow manual triggering
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  release:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build application
+        run: npm run build-win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: List build artifacts
+        run: |
+          echo "Build completed. Listing dist folder:"
+          dir dist
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: udupi-pos-build-${{ github.ref_name }}
+          path: |
+            dist/*.exe
+            dist/latest.yml
+            dist/*.yml
+            
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            dist/*.exe
+            dist/latest.yml
+          body: |
+            ## 🚀 Udupi POS ${{ github.ref_name }}
+            
+            ### 📦 Installation
+            - **Installer**: Download `Udupi Restaurant POS Setup *.exe` for automatic installation
+            - **Portable**: Download `Udupi-POS-Portable-*.exe` for USB deployment
+            
+            ### 🔄 Auto-Update
+            Existing users will be automatically notified of this update within their POS application.
+            
+            ### 💾 System Requirements
+            - Windows 7/8/10/11
+            - .NET Framework 4.5 or higher
+            - Thermal printer (optional)
+            
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.sha }}
+          generate_release_notes: false
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Notify completion
+        if: success()
+        run: |
+          echo "✅ Release ${{ github.ref_name }} created successfully!"
+          echo "🔗 Available at: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+          echo "📱 Auto-updater will notify existing users automatically"
