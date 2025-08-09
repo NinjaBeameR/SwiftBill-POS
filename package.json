@@ -5,11 +5,11 @@
   "main": "main.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR_USERNAME/udupi-pos-system.git"
+    "url": "git+https://github.com/NinjaBeameR/SwiftBill-POS.git"
   },
-  "homepage": "https://github.com/YOUR_USERNAME/udupi-pos-system#readme",
+  "homepage": "https://github.com/NinjaBeameR/SwiftBill-POS#readme",
   "bugs": {
-    "url": "https://github.com/YOUR_USERNAME/udupi-pos-system/issues"
+    "url": "https://github.com/NinjaBeameR/SwiftBill-POS/issues"
   },
   "keywords": [
     "pos",
@@ -29,12 +29,17 @@
     "build-portable": "electron-builder --win portable",
     "build-installer": "electron-builder --win nsis",
     "dist": "npm run build-portable && npm run build-installer",
-    "package": "electron-packager . \"Udupi POS\" --platform win32 --arch x64 --out dist --ignore node_modules --ignore dist --ignore .git --app-version 1.0.0"
+    "package": "electron-packager . \"Udupi POS\" --platform win32 --arch x64 --out dist --ignore node_modules --ignore dist --ignore .git --app-version 1.0.0",
+    "release": "electron-builder --win --publish always",
+    "release-draft": "electron-builder --win --publish never"
   },
   "devDependencies": {
     "electron": "^25.0.0",
     "electron-builder": "^24.13.3",
     "electron-packager": "^17.1.2"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
   },
   "build": {
     "appId": "com.udupipos.restaurant",
@@ -44,6 +49,13 @@
       "output": "dist",
       "buildResources": "build"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "NinjaBeameR",
+        "repo": "SwiftBill-POS"
+      }
+    ],
     "files": [
       "main.js",
       "renderer.js",
@@ -91,7 +103,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Udupi Restaurant POS",
       "runAfterFinish": true,
-      "include": "build/installer.nsh"
+      "include": "build/installer.nsh",
+      "differentialPackage": true
     },
     "portable": {
       "artifactName": "Udupi-POS-Portable-${version}.${ext}"

@@ -1,8 +1,10 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const UpdateManager = require('./src/utils/updateManager');
 
 let mainWindow;
+let updateManager;
 
 // Ensure data directories exist in production
 const ensureDataDirectories = () => {
@@ -292,6 +294,11 @@ const preloadPrinterCache = async () => {
 // Call preload after window is ready
 app.whenReady().then(() => {
   createWindow();
+  
+  // Initialize update manager after window is created
+  updateManager = new UpdateManager();
+  updateManager.setMainWindow(mainWindow);
+  
   // Preload printer cache after a short delay to ensure window is fully ready
   setTimeout(preloadPrinterCache, 2000);
 });
@@ -628,3 +635,39 @@ ipcMain.handle('test-printer-connection', async (event, printerName) => {
 
 // Note: Print functionality now handled directly in renderer process using window.print()
 // This provides better compatibility with thermal printers and system print drivers
+
+// Update Manager IPC Handlers
+ipcMain.handle('check-for-updates', async () => {
+  if (!updateManager) {
+    return { success: false, error: 'Update manager not initialized' };
+  }
+  return await updateManager.manualCheckForUpdates();
+});
+
+ipcMain.handle('download-update', async () => {
+  if (!updateManager) {
+    return { success: false, error: 'Update manager not initialized' };
+  }
+  return await updateManager.downloadUpdate();
+});
+
+ipcMain.handle('install-update', async () => {
+  if (!updateManager) {
+    return { success: false, error: 'Update manager not initialized' };
+  }
+  return await updateManager.installUpdateAndRestart();
+});
+
+ipcMain.handle('get-update-status', () => {
+  if (!updateManager) {
+    return { updateAvailable: false, updateDownloaded: false, isChecking: false };
+  }
+  return updateManager.getUpdateStatus();
+});
+
+// Cleanup update manager on app quit
+app.on('before-quit', () => {
+  if (updateManager) {
+    updateManager.destroy();
+  }
+});

@@ -42,10 +42,42 @@ class DataPathManager {
 // Global data path manager instance
 const dataPathManager = new DataPathManager();
 
+// Load Update UI Manager
+const updateUIManagerPath = './src/utils/updateUIManager.js';
+let UpdateUIManager;
+try {
+    UpdateUIManager = require(updateUIManagerPath);
+} catch (error) {
+    console.warn('UpdateUIManager not available:', error.message);
+}
+
+// Load Manual Update Checker
+const manualUpdateCheckerPath = './src/utils/manualUpdateChecker.js';
+let ManualUpdateChecker;
+try {
+    ManualUpdateChecker = require(manualUpdateCheckerPath);
+} catch (error) {
+    console.warn('ManualUpdateChecker not available:', error.message);
+}
+
 // Wait for DOM to load and then initialize
 document.addEventListener('DOMContentLoaded', async () => {
     // Initialize the POS app
     window.posApp = new POSApp();
+    
+    // Initialize update UI manager after a short delay
+    if (UpdateUIManager) {
+        setTimeout(() => {
+            window.updateUIManager = new UpdateUIManager();
+        }, 2000);
+    }
+    
+    // Initialize manual update checker
+    if (ManualUpdateChecker) {
+        setTimeout(() => {
+            window.manualUpdateChecker = new ManualUpdateChecker();
+        }, 3000);
+    }
 });
 
 class POSApp {
