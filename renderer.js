@@ -42,22 +42,13 @@ class DataPathManager {
 // Global data path manager instance
 const dataPathManager = new DataPathManager();
 
-// Load Update UI Manager
-const updateUIManagerPath = './src/utils/updateUIManager.js';
-let UpdateUIManager;
+// Load Auto-Update UI Handler
+const autoUpdateUIPath = './src/utils/autoUpdateUI.js';
+let AutoUpdateUI;
 try {
-    UpdateUIManager = require(updateUIManagerPath);
+    AutoUpdateUI = require(autoUpdateUIPath);
 } catch (error) {
-    console.warn('UpdateUIManager not available:', error.message);
-}
-
-// Load Manual Update Checker
-const manualUpdateCheckerPath = './src/utils/manualUpdateChecker.js';
-let ManualUpdateChecker;
-try {
-    ManualUpdateChecker = require(manualUpdateCheckerPath);
-} catch (error) {
-    console.warn('ManualUpdateChecker not available:', error.message);
+    console.warn('AutoUpdateUI not available:', error.message);
 }
 
 // Wait for DOM to load and then initialize
@@ -65,18 +56,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize the POS app
     window.posApp = new POSApp();
     
-    // Initialize update UI manager after a short delay
-    if (UpdateUIManager) {
+    // Initialize auto-update UI after a short delay
+    if (AutoUpdateUI) {
         setTimeout(() => {
-            window.updateUIManager = new UpdateUIManager();
+            window.autoUpdateUI = new AutoUpdateUI();
+            console.log('AutoUpdateUI: Initialized and ready');
         }, 2000);
-    }
-    
-    // Initialize manual update checker
-    if (ManualUpdateChecker) {
-        setTimeout(() => {
-            window.manualUpdateChecker = new ManualUpdateChecker();
-        }, 3000);
     }
 });
 
@@ -272,10 +257,6 @@ class POSApp {
             this.showCounterSelector();
         });
 
-        document.getElementById('view-earnings-btn').addEventListener('click', () => {
-            this.showEarningsScreen();
-        });
-
         // Back buttons
         document.getElementById('back-to-service').addEventListener('click', () => {
             this.showServiceSelector();
@@ -293,22 +274,9 @@ class POSApp {
             }
         });
 
-        document.getElementById('back-to-service-from-earnings').addEventListener('click', () => {
-            this.showServiceSelector();
-        });
-
         // Print button
         document.getElementById('print-order').addEventListener('click', () => {
             this.printOrder();
-        });
-
-        // Earnings screen event listeners
-        document.getElementById('earnings-period').addEventListener('change', () => {
-            this.loadEarningsData();
-        });
-
-        document.getElementById('refresh-earnings').addEventListener('click', () => {
-            this.loadEarningsData();
         });
 
         // Search functionality
@@ -552,27 +520,14 @@ class POSApp {
     showSearchFeedback(itemName) {
         // Create temporary feedback element
         const feedback = document.createElement('div');
-        feedback.className = 'search-feedback';
+        feedback.className = 'search-feedback success';
         feedback.textContent = `Added "${itemName}" to order`;
-        feedback.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #10b981;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            z-index: 10000;
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
-            animation: slideInRight 0.3s ease;
-        `;
         
         document.body.appendChild(feedback);
         
         // Remove feedback after 2 seconds
         setTimeout(() => {
-            feedback.style.animation = 'slideOutRight 0.3s ease';
+            feedback.classList.add('slide-out');
             setTimeout(() => {
                 if (feedback.parentNode) {
                     feedback.parentNode.removeChild(feedback);
@@ -1148,42 +1103,14 @@ class POSApp {
     showMessage(message, type = 'info') {
         // Create message element
         const messageDiv = document.createElement('div');
-        messageDiv.className = `menu-message menu-message-${type}`;
+        messageDiv.className = `status-message ${type}`;
         messageDiv.textContent = message;
-        messageDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            z-index: 10001;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            animation: slideInRight 0.3s ease;
-            max-width: 300px;
-            word-wrap: break-word;
-        `;
-
-        // Apply type-specific styling
-        switch (type) {
-            case 'success':
-                messageDiv.style.background = '#10b981';
-                messageDiv.style.color = 'white';
-                break;
-            case 'error':
-                messageDiv.style.background = '#ef4444';
-                messageDiv.style.color = 'white';
-                break;
-            default:
-                messageDiv.style.background = '#3b82f6';
-                messageDiv.style.color = 'white';
-        }
         
         document.body.appendChild(messageDiv);
         
         // Remove message after delay
         setTimeout(() => {
-            messageDiv.style.animation = 'slideOutRight 0.3s ease';
+            messageDiv.classList.add('slide-out');
             setTimeout(() => {
                 if (messageDiv.parentNode) {
                     messageDiv.parentNode.removeChild(messageDiv);
@@ -1346,7 +1273,6 @@ class POSApp {
         document.getElementById('table-selector-screen').classList.remove('active');
         document.getElementById('counter-selector-screen').classList.remove('active');
         document.getElementById('billing-screen').classList.remove('active');
-        document.getElementById('earnings-screen').classList.remove('active');
         this.resetCurrentState();
     }
 
@@ -1355,7 +1281,6 @@ class POSApp {
         document.getElementById('table-selector-screen').classList.add('active');
         document.getElementById('counter-selector-screen').classList.remove('active');
         document.getElementById('billing-screen').classList.remove('active');
-        document.getElementById('earnings-screen').classList.remove('active');
         this.resetCurrentState();
         this.renderTables();
     }
@@ -1365,19 +1290,8 @@ class POSApp {
         document.getElementById('table-selector-screen').classList.remove('active');
         document.getElementById('counter-selector-screen').classList.add('active');
         document.getElementById('billing-screen').classList.remove('active');
-        document.getElementById('earnings-screen').classList.remove('active');
         this.resetCurrentState();
         this.renderCounters();
-    }
-
-    showEarningsScreen() {
-        document.getElementById('service-selector-screen').classList.remove('active');
-        document.getElementById('table-selector-screen').classList.remove('active');
-        document.getElementById('counter-selector-screen').classList.remove('active');
-        document.getElementById('billing-screen').classList.remove('active');
-        document.getElementById('earnings-screen').classList.add('active');
-        this.resetCurrentState();
-        this.loadEarningsData();
     }
 
     resetCurrentState() {
@@ -1392,7 +1306,6 @@ class POSApp {
         document.getElementById('table-selector-screen').classList.remove('active');
         document.getElementById('counter-selector-screen').classList.remove('active');
         document.getElementById('billing-screen').classList.add('active');
-        document.getElementById('earnings-screen').classList.remove('active');
         
         // Update header based on billing mode
         if (this.billingMode === 'table') {
@@ -2154,9 +2067,6 @@ class POSApp {
             
             console.log('Order printed successfully (Auto-Silent Mode)');
             
-            // Save completed order for earnings tracking
-            this.saveCompletedOrder();
-            
             // Clear order after successful print
             this.currentOrder = [];
             
@@ -2202,9 +2112,6 @@ class POSApp {
                         printButton.textContent = '🖨 Print';
                         printButton.disabled = false;
                     }, 2000);
-                    
-                    // Save completed order for earnings tracking
-                    this.saveCompletedOrder();
                     
                     // Clear order after successful print
                     this.currentOrder = [];
@@ -2673,9 +2580,6 @@ class POSApp {
             await this.printCustomerBill();
             
             console.log('Order printed successfully (Preview Mode)');
-            
-            // Save completed order for earnings tracking
-            this.saveCompletedOrder();
             
             // Clear order after successful print
             this.currentOrder = [];
@@ -3469,183 +3373,4 @@ class POSApp {
             </html>
         `;
     }
-
-    // ===== EARNINGS FUNCTIONALITY =====
-
-    saveCompletedOrder() {
-        // Save completed order data for earnings tracking
-        if (this.currentOrder.length === 0) return;
-
-        try {
-            const completedOrdersKey = 'completedOrders';
-            const existingOrders = JSON.parse(localStorage.getItem(completedOrdersKey) || '[]');
-            
-            const completedOrder = {
-                timestamp: new Date().toISOString(),
-                date: new Date().toDateString(),
-                location: this.billingMode === 'table' ? `Table ${this.currentLocation}` : `Counter ${this.currentLocation}`,
-                billingMode: this.billingMode,
-                items: this.currentOrder.map(item => ({
-                    id: item.id,
-                    name: item.name,
-                    quantity: item.quantity,
-                    price: item.price,
-                    originalPrice: item.originalPrice || item.price,
-                    category: item.category || 'General',
-                    parcelCharge: item.parcelCharge || 0,
-                    parcelType: item.parcelType || null
-                })),
-                subtotal: this.getSubtotal(),
-                parcelCharges: this.getTotalParcelCharges(),
-                parcelItemsCount: this.getParcelItemsCount(),
-                total: this.getTotal()
-            };
-
-            existingOrders.push(completedOrder);
-            localStorage.setItem(completedOrdersKey, JSON.stringify(existingOrders));
-            
-            console.log('Order saved for earnings tracking:', completedOrder);
-        } catch (error) {
-            console.error('Error saving completed order:', error);
-        }
-    }
-
-    loadEarningsData() {
-        const period = document.getElementById('earnings-period').value;
-        const completedOrders = this.getCompletedOrdersForPeriod(period);
-        
-        if (completedOrders.length === 0) {
-            this.showNoEarningsData();
-            return;
-        }
-
-        const earningsData = this.calculateEarningsFromOrders(completedOrders);
-        this.renderEarningsData(earningsData);
-    }
-
-    getCompletedOrdersForPeriod(period) {
-        try {
-            const allOrders = JSON.parse(localStorage.getItem('completedOrders') || '[]');
-            const now = new Date();
-            
-            let startDate;
-            
-            switch (period) {
-                case 'today':
-                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                    break;
-                case 'week':
-                    startDate = new Date(now);
-                    startDate.setDate(now.getDate() - 7);
-                    break;
-                case 'month':
-                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                    break;
-                case 'year':
-                    startDate = new Date(now.getFullYear(), 0, 1);
-                    break;
-                default:
-                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            }
-
-            return allOrders.filter(order => {
-                const orderDate = new Date(order.timestamp);
-                return orderDate >= startDate && orderDate <= now;
-            });
-        } catch (error) {
-            console.error('Error loading completed orders:', error);
-            return [];
-        }
-    }
-
-    calculateEarningsFromOrders(orders) {
-        const itemSales = {};
-        let totalOrders = orders.length;
-        let totalItemsSold = 0;
-        let totalEarnings = 0;
-
-        orders.forEach(order => {
-            totalEarnings += order.total;
-            
-            order.items.forEach(item => {
-                totalItemsSold += item.quantity;
-                
-                const itemKey = item.name;
-                if (!itemSales[itemKey]) {
-                    itemSales[itemKey] = {
-                        name: item.name,
-                        category: item.category,
-                        quantitySold: 0,
-                        totalEarnings: 0
-                    };
-                }
-                
-                itemSales[itemKey].quantitySold += item.quantity;
-                itemSales[itemKey].totalEarnings += (item.price * item.quantity);
-            });
-        });
-
-        // Convert to array and sort by earnings
-        const itemSalesArray = Object.values(itemSales);
-        itemSalesArray.sort((a, b) => b.totalEarnings - a.totalEarnings);
-
-        return {
-            totalOrders,
-            totalItemsSold,
-            totalEarnings,
-            itemSales: itemSalesArray
-        };
-    }
-
-    renderEarningsData(data) {
-        // Hide no data message
-        document.getElementById('no-earnings-data').style.display = 'none';
-        
-        // Update summary cards
-        document.getElementById('total-orders').textContent = data.totalOrders;
-        document.getElementById('total-items-sold').textContent = data.totalItemsSold;
-        document.getElementById('total-earnings').textContent = `₹${data.totalEarnings.toFixed(2)}`;
-
-        // Render items table
-        const tableBody = document.getElementById('earnings-table-body');
-        tableBody.innerHTML = '';
-
-        if (data.itemSales.length === 0) {
-            this.showNoEarningsData();
-            return;
-        }
-
-        data.itemSales.forEach(item => {
-            const row = document.createElement('div');
-            row.className = 'earnings-table-row';
-            
-            row.innerHTML = `
-                <div class="table-col item-name-col">${item.name}</div>
-                <div class="table-col qty-col">${item.quantitySold}</div>
-                <div class="table-col total-col">₹${item.totalEarnings.toFixed(2)}</div>
-            `;
-            
-            tableBody.appendChild(row);
-        });
-
-        // Show earnings table
-        document.querySelector('.earnings-table-container').style.display = 'block';
-        document.querySelector('.earnings-summary').style.display = 'grid';
-    }
-
-    showNoEarningsData() {
-        // Hide earnings table and summary
-        document.querySelector('.earnings-table-container').style.display = 'none';
-        document.querySelector('.earnings-summary').style.display = 'none';
-        
-        // Show no data message
-        document.getElementById('no-earnings-data').style.display = 'block';
-        
-        // Reset summary values
-        document.getElementById('total-orders').textContent = '0';
-        document.getElementById('total-items-sold').textContent = '0';
-        document.getElementById('total-earnings').textContent = '₹0.00';
-    }
-
-    // ===== END EARNINGS FUNCTIONALITY =====
 }

@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -33,11 +33,6 @@
                         <div class="service-icon">🥡</div>
                         <div class="service-title">Counter Billing</div>
                         <div class="service-description">Counter Bills</div>
-                    </div>
-                    <div class="service-card" id="view-earnings-btn">
-                        <div class="service-icon">📊</div>
-                        <div class="service-title">View Earnings</div>
-                        <div class="service-description">Sales Reports & Analytics</div>
                     </div>
                 </div>
             </div>
@@ -126,65 +121,6 @@
             </div>
 
             <!-- Earnings Screen -->
-            <div id="earnings-screen" class="screen">
-                <div class="screen-header">
-                    <button id="back-to-service-from-earnings" class="btn btn-secondary">← Back to Home</button>
-                    <h2>📊 Earnings Report</h2>
-                </div>
-                
-                <div class="earnings-content">
-                    <!-- Time Filter -->
-                    <div class="earnings-filter">
-                        <label for="earnings-period">Report Period:</label>
-                        <select id="earnings-period" class="earnings-select">
-                            <option value="today">Today</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
-                            <option value="year">This Year</option>
-                        </select>
-                        <button id="refresh-earnings" class="btn btn-primary">🔄 Refresh</button>
-                    </div>
-
-                    <!-- Total Earnings Summary -->
-                    <div class="earnings-summary">
-                        <div class="summary-card">
-                            <div class="summary-label">Total Orders</div>
-                            <div class="summary-value" id="total-orders">0</div>
-                        </div>
-                        <div class="summary-card">
-                            <div class="summary-label">Total Items Sold</div>
-                            <div class="summary-value" id="total-items-sold">0</div>
-                        </div>
-                        <div class="summary-card total-earnings-card">
-                            <div class="summary-label">Total Earnings</div>
-                            <div class="summary-value" id="total-earnings">₹0.00</div>
-                        </div>
-                    </div>
-
-                    <!-- Item-wise Sales Table -->
-                    <div class="earnings-table-container">
-                        <h3>Item-wise Sales</h3>
-                        <div class="earnings-table">
-                            <div class="earnings-table-header">
-                                <div class="table-col item-name-col">Item Name</div>
-                                <div class="table-col qty-col">Qty Sold</div>
-                                <div class="table-col total-col">Total ₹</div>
-                            </div>
-                            <div id="earnings-table-body" class="earnings-table-body">
-                                <!-- Items will be populated here -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- No Data Message -->
-                    <div id="no-earnings-data" class="no-earnings-data" style="display: none;">
-                        <div class="no-data-icon">📈</div>
-                        <h3>No Sales Data Found</h3>
-                        <p>No orders have been completed in the selected time period.</p>
-                        <p>Complete some orders to see earnings data here.</p>
-                    </div>
-                </div>
-            </div>
         </main>
 
         <!-- MenuManager Modal -->

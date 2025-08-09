@@ -1,10 +1,19 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
-const UpdateManager = require('./src/utils/updateManager');
 
 let mainWindow;
-let updateManager;
+
+// Auto-update state management
+let updateState = {
+  isChecking: false,
+  updateAvailable: false,
+  updateDownloaded: false,
+  updateInfo: null,
+  downloadProgress: 0,
+  dismissedVersions: new Set() // Track dismissed update versions
+};
 
 // Ensure data directories exist in production
 const ensureDataDirectories = () => {
@@ -49,7 +58,9 @@ const createWindow = () => {
     height: 800,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      enableRemoteModule: false,
+      webSecurity: true
     },
     show: false,
     icon: path.join(__dirname, 'assets', 'icon.png'), // Will fallback gracefully if not found
@@ -58,6 +69,16 @@ const createWindow = () => {
 
   // Load the app
   mainWindow.loadFile('index.html');
+
+  // Set Content Security Policy via session
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': ['default-src \'self\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\'; img-src \'self\' data:; font-src \'self\'; connect-src \'self\'; object-src \'none\'; base-uri \'self\'; form-action \'self\';']
+      }
+    });
+  });
 
   // Show window when ready to prevent visual flash
   mainWindow.once('ready-to-show', () => {
@@ -102,7 +123,8 @@ ipcMain.handle('silent-print-kot', async (event, kotContent) => {
       show: false,
       webPreferences: {
         nodeIntegration: true,
-        contextIsolation: false
+        contextIsolation: false,
+        enableRemoteModule: false
       }
     });
 
@@ -149,7 +171,8 @@ ipcMain.handle('silent-print-bill', async (event, billContent) => {
       show: false,
       webPreferences: {
         nodeIntegration: true,
-        contextIsolation: false
+        contextIsolation: false,
+        enableRemoteModule: false
       }
     });
 
@@ -295,13 +318,152 @@ const preloadPrinterCache = async () => {
 app.whenReady().then(() => {
   createWindow();
   
-  // Initialize update manager after window is created
-  updateManager = new UpdateManager();
-  updateManager.setMainWindow(mainWindow);
+  // Initialize auto-update system after window is created
+  initializeAutoUpdater();
   
   // Preload printer cache after a short delay to ensure window is fully ready
   setTimeout(preloadPrinterCache, 2000);
 });
+
+// ===========================
+// AUTO-UPDATE SYSTEM - BRAND NEW IMPLEMENTATION
+// ===========================
+
+function initializeAutoUpdater() {
+  // Configure autoUpdater for GitHub releases
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'NinjaBeameR',
+    repo: 'SwiftBill-POS'
+  });
+
+  // Configure update behavior
+  autoUpdater.autoDownload = false; // Manual control over download
+  autoUpdater.autoInstallOnAppQuit = false; // Manual control over install
+  autoUpdater.allowPrerelease = false;
+
+  console.log('AutoUpdater: Configured for GitHub releases');
+
+  // Set up all autoUpdater event listeners
+  setupAutoUpdaterListeners();
+
+  // Start checking for updates automatically (3 seconds after app start)
+  setTimeout(() => {
+    checkForUpdatesAutomatically();
+  }, 3000);
+}
+
+function setupAutoUpdaterListeners() {
+  // Event: Starting to check for updates
+  autoUpdater.on('checking-for-update', () => {
+    console.log('AutoUpdater: Checking for updates...');
+    updateState.isChecking = true;
+    notifyRenderer('checking-for-update');
+  });
+
+  // Event: Update is available
+  autoUpdater.on('update-available', (info) => {
+    console.log('AutoUpdater: Update available:', info.version);
+    
+    updateState.isChecking = false;
+    updateState.updateAvailable = true;
+    updateState.updateInfo = {
+      version: info.version,
+      releaseDate: info.releaseDate,
+      releaseName: info.releaseName || `Version ${info.version}`,
+      releaseNotes: info.releaseNotes || 'Bug fixes and improvements',
+      releaseUrl: `https://github.com/NinjaBeameR/SwiftBill-POS/releases/tag/v${info.version}`
+    };
+
+    // Only show notification if this version hasn't been dismissed
+    if (!updateState.dismissedVersions.has(info.version)) {
+      notifyRenderer('update-available', updateState.updateInfo);
+      
+      // Start downloading silently
+      setTimeout(() => {
+        downloadUpdateSilently();
+      }, 2000);
+    } else {
+      console.log('AutoUpdater: Update was previously dismissed, not showing notification');
+    }
+  });
+
+  // Event: No update available
+  autoUpdater.on('update-not-available', () => {
+    console.log('AutoUpdater: No updates available');
+    updateState.isChecking = false;
+    updateState.updateAvailable = false;
+    updateState.updateInfo = null;
+    notifyRenderer('update-not-available');
+  });
+
+  // Event: Download progress
+  autoUpdater.on('download-progress', (progressObj) => {
+    updateState.downloadProgress = Math.round(progressObj.percent);
+    console.log(`AutoUpdater: Download progress: ${updateState.downloadProgress}%`);
+    
+    notifyRenderer('download-progress', {
+      percent: updateState.downloadProgress,
+      transferred: progressObj.transferred,
+      total: progressObj.total,
+      bytesPerSecond: progressObj.bytesPerSecond
+    });
+  });
+
+  // Event: Update downloaded and ready to install
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('AutoUpdater: Update downloaded successfully');
+    updateState.updateDownloaded = true;
+    updateState.downloadProgress = 100;
+    
+    notifyRenderer('update-downloaded', {
+      version: info.version,
+      releaseName: info.releaseName || `Version ${info.version}`
+    });
+  });
+
+  // Event: Error occurred
+  autoUpdater.on('error', (error) => {
+    console.error('AutoUpdater: Update error:', error);
+    updateState.isChecking = false;
+    
+    // Only show error if user initiated the check, not for background checks
+    if (updateState.userInitiated) {
+      notifyRenderer('update-error', {
+        message: error.message || 'Update check failed'
+      });
+    }
+    updateState.userInitiated = false;
+  });
+}
+
+function checkForUpdatesAutomatically() {
+  if (updateState.isChecking) return;
+  
+  try {
+    updateState.userInitiated = false; // This is an automatic check
+    autoUpdater.checkForUpdates();
+  } catch (error) {
+    console.error('AutoUpdater: Failed to check for updates:', error);
+  }
+}
+
+function downloadUpdateSilently() {
+  if (updateState.updateDownloaded || !updateState.updateAvailable) return;
+  
+  try {
+    console.log('AutoUpdater: Starting silent download...');
+    autoUpdater.downloadUpdate();
+  } catch (error) {
+    console.error('AutoUpdater: Failed to download update:', error);
+  }
+}
+
+function notifyRenderer(event, data = {}) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('auto-update-event', { event, data });
+  }
+}
 
 // Auto-detect printer and enable true one-click silent printing
 ipcMain.handle('auto-silent-print', async (event, content, printType = 'bill') => {
@@ -636,38 +798,126 @@ ipcMain.handle('test-printer-connection', async (event, printerName) => {
 // Note: Print functionality now handled directly in renderer process using window.print()
 // This provides better compatibility with thermal printers and system print drivers
 
-// Update Manager IPC Handlers
+// ===========================
+// AUTO-UPDATE IPC HANDLERS
+// ===========================
+
+// Manual check for updates (user-initiated)
 ipcMain.handle('check-for-updates', async () => {
-  if (!updateManager) {
-    return { success: false, error: 'Update manager not initialized' };
+  if (updateState.isChecking) {
+    return { success: false, error: 'Update check already in progress' };
   }
-  return await updateManager.manualCheckForUpdates();
+  
+  try {
+    updateState.userInitiated = true; // This is a user-initiated check
+    autoUpdater.checkForUpdates();
+    return { success: true, message: 'Checking for updates...' };
+  } catch (error) {
+    console.error('AutoUpdater: Manual check failed:', error);
+    return { success: false, error: error.message };
+  }
 });
 
+// Download update (user-initiated)
 ipcMain.handle('download-update', async () => {
-  if (!updateManager) {
-    return { success: false, error: 'Update manager not initialized' };
+  if (!updateState.updateAvailable) {
+    return { success: false, error: 'No update available to download' };
   }
-  return await updateManager.downloadUpdate();
+  
+  if (updateState.updateDownloaded) {
+    return { success: true, message: 'Update already downloaded', alreadyDownloaded: true };
+  }
+  
+  try {
+    autoUpdater.downloadUpdate();
+    return { success: true, message: 'Download started...' };
+  } catch (error) {
+    console.error('AutoUpdater: Download failed:', error);
+    return { success: false, error: error.message };
+  }
 });
 
+// Install update and restart app
 ipcMain.handle('install-update', async () => {
-  if (!updateManager) {
-    return { success: false, error: 'Update manager not initialized' };
+  if (!updateState.updateDownloaded) {
+    return { success: false, error: 'No update downloaded to install' };
   }
-  return await updateManager.installUpdateAndRestart();
+  
+  try {
+    // Notify renderer that restart is happening
+    notifyRenderer('app-restarting');
+    
+    // Small delay to ensure message is sent
+    setTimeout(() => {
+      autoUpdater.quitAndInstall();
+    }, 1000);
+    
+    return { success: true, message: 'Restarting to install update...' };
+  } catch (error) {
+    console.error('AutoUpdater: Install failed:', error);
+    return { success: false, error: error.message };
+  }
 });
 
+// Get current update status
 ipcMain.handle('get-update-status', () => {
-  if (!updateManager) {
-    return { updateAvailable: false, updateDownloaded: false, isChecking: false };
-  }
-  return updateManager.getUpdateStatus();
+  return {
+    isChecking: updateState.isChecking,
+    updateAvailable: updateState.updateAvailable,
+    updateDownloaded: updateState.updateDownloaded,
+    updateInfo: updateState.updateInfo,
+    downloadProgress: updateState.downloadProgress
+  };
 });
 
-// Cleanup update manager on app quit
-app.on('before-quit', () => {
-  if (updateManager) {
-    updateManager.destroy();
+// Dismiss update notification (user clicked "Later")
+ipcMain.handle('dismiss-update', (event, version) => {
+  if (version) {
+    updateState.dismissedVersions.add(version);
+    console.log('AutoUpdater: Update dismissed:', version);
+    return { success: true };
+  }
+  return { success: false, error: 'No version specified' };
+});
+
+// Open release URL in external browser
+ipcMain.handle('open-release-url', async (event, url) => {
+  if (!url) return { success: false, error: 'No URL provided' };
+  
+  try {
+    const { shell } = require('electron');
+    await shell.openExternal(url);
+    return { success: true };
+  } catch (error) {
+    console.error('AutoUpdater: Failed to open URL:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Test handler for development (simulate update scenarios)
+ipcMain.handle('test-update-scenario', (event, scenario) => {
+  try {
+    if (scenario === 'update-available') {
+      const mockInfo = {
+        version: '1.0.3',
+        releaseDate: new Date().toISOString(),
+        releaseName: 'Test Version 1.0.3',
+        releaseNotes: 'This is a test update for development purposes.',
+        releaseUrl: 'https://github.com/NinjaBeameR/SwiftBill-POS/releases/tag/v1.0.3'
+      };
+      
+      updateState.updateAvailable = true;
+      updateState.updateInfo = mockInfo;
+      notifyRenderer('update-available', mockInfo);
+      
+    } else if (scenario === 'no-update') {
+      updateState.updateAvailable = false;
+      updateState.updateInfo = null;
+      notifyRenderer('update-not-available');
+    }
+    
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
   }
 });

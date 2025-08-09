@@ -10,6 +10,7 @@ class UpdateUIManager {
         this.updateInfo = null;
         this.downloadProgress = 0;
         this.isDownloading = false;
+        this.dismissedUpdates = this.loadDismissedUpdates(); // Load from localStorage
         
         this.init();
     }
@@ -90,6 +91,12 @@ class UpdateUIManager {
         });
 
         document.getElementById('update-dismiss-btn').addEventListener('click', () => {
+            // Mark this update as dismissed and hide notification
+            if (this.updateInfo && (this.updateInfo.version || this.updateInfo.releaseName)) {
+                const updateVersion = this.updateInfo.version || this.updateInfo.releaseName;
+                this.dismissedUpdates.add(updateVersion);
+                this.saveDismissedUpdates(); // Save to localStorage
+            }
             this.hideNotificationBar();
         });
 
@@ -107,7 +114,15 @@ class UpdateUIManager {
         });
 
         document.getElementById('update-cancel-btn').addEventListener('click', () => {
+            // Mark this update as dismissed when user clicks "Later"
+            if (this.updateInfo && (this.updateInfo.version || this.updateInfo.releaseName)) {
+                const updateVersion = this.updateInfo.version || this.updateInfo.releaseName;
+                this.dismissedUpdates.add(updateVersion);
+                this.saveDismissedUpdates();
+                console.log('UpdateUIManager: Update dismissed via Later button:', updateVersion);
+            }
             this.hideUpdateModal();
+            this.hideNotificationBar(); // Also hide the notification bar
         });
 
         // Close modal on background click
@@ -159,6 +174,13 @@ class UpdateUIManager {
     }
 
     showUpdateAvailable(info) {
+        // Check if this update was already dismissed by the user
+        const updateVersion = info.version || info.releaseName;
+        if (this.dismissedUpdates.has(updateVersion)) {
+            console.log('UpdateUIManager: Update was previously dismissed by user, not showing notification');
+            return;
+        }
+        
         const messageText = document.getElementById('update-message-text');
         if (messageText) {
             messageText.textContent = `Update available: ${info.releaseName || info.version}`;
@@ -281,10 +303,20 @@ class UpdateUIManager {
                 
                 // Only show UI if there's actually an update available or downloaded
                 if (status.updateAvailable && !status.updateDownloaded) {
+                    // Check if this update was already dismissed
+                    if (status.updateInfo && status.updateInfo.version) {
+                        if (this.dismissedUpdates.has(status.updateInfo.version)) {
+                            console.log('UpdateUIManager: Update was previously dismissed by user, not showing notification on startup');
+                            return;
+                        }
+                    }
+                    
+                    this.updateInfo = status.updateInfo || { version: 'Available' };
                     this.showNotificationBar();
                     const messageText = document.getElementById('update-message-text');
                     if (messageText) {
-                        messageText.textContent = 'Update available';
+                        const version = status.updateInfo ? status.updateInfo.version : 'Available';
+                        messageText.textContent = `Update available: ${version}`;
                     }
                 } else if (status.updateDownloaded) {
                     this.showNotificationBar();
@@ -318,24 +350,45 @@ class UpdateUIManager {
     showUpdateModal() {
         const modal = document.getElementById('update-modal');
         if (modal) {
-            // Update modal content with current update info
-            if (this.updateInfo) {
+            // Only show modal if we have valid update info
+            if (this.updateInfo && (this.updateInfo.version || this.updateInfo.releaseName)) {
                 const versionInfo = document.getElementById('update-version-info');
                 const releaseNotes = document.getElementById('update-release-notes');
                 
                 if (versionInfo) {
-                    versionInfo.textContent = `Version ${this.updateInfo.version} is now available`;
+                    const version = this.updateInfo.version || this.updateInfo.releaseName;
+                    versionInfo.textContent = `Version ${version} is now available`;
                 }
                 
-                if (releaseNotes && this.updateInfo.releaseNotes) {
-                    releaseNotes.innerHTML = `
-                        <h4>What's New:</h4>
-                        <div class="release-notes">${this.updateInfo.releaseNotes}</div>
-                    `;
+                if (releaseNotes) {
+                    let notesContent = '';
+                    if (this.updateInfo.releaseNotes) {
+                        notesContent = `
+                            <h4>What's New:</h4>
+                            <div class="release-notes">${this.updateInfo.releaseNotes}</div>
+                        `;
+                    }
+                    
+                    // Add link to GitHub release page if version is available
+                    if (this.updateInfo.version) {
+                        notesContent += `
+                            <div style="margin-top: 10px;">
+                                <a href="https://github.com/NinjaBeameR/SwiftBill-POS/releases/tag/v${this.updateInfo.version}" 
+                                   target="_blank" style="color: #007bff; text-decoration: none;">
+                                    View full release details on GitHub →
+                                </a>
+                            </div>
+                        `;
+                    }
+                    
+                    releaseNotes.innerHTML = notesContent;
                 }
+                
+                modal.style.display = 'flex';
+            } else {
+                // No valid update info - trigger a manual check
+                this.manualCheckForUpdates();
             }
-            
-            modal.style.display = 'flex';
         }
     }
 
@@ -413,6 +466,44 @@ class UpdateUIManager {
         if (modal) modal.remove();
         
         this.isInitialized = false;
+    }
+
+    // Persistent storage for dismissed updates
+    loadDismissedUpdates() {
+        try {
+            const stored = localStorage.getItem('dismissedUpdates');
+            if (stored) {
+                return new Set(JSON.parse(stored));
+            }
+        } catch (error) {
+            console.warn('UpdateUIManager: Failed to load dismissed updates:', error);
+        }
+        return new Set();
+    }
+
+    saveDismissedUpdates() {
+        try {
+            localStorage.setItem('dismissedUpdates', JSON.stringify(Array.from(this.dismissedUpdates)));
+        } catch (error) {
+            console.error('UpdateUIManager: Failed to save dismissed updates:', error);
+        }
+    }
+
+    // Test methods for development/debugging
+    async testUpdateScenario(scenario) {
+        if (typeof ipcRenderer !== 'undefined') {
+            const result = await ipcRenderer.invoke('test-update-scenario', scenario);
+            console.log('UpdateUIManager: Test scenario result:', result);
+            return result;
+        }
+        return { success: false, error: 'IPC not available' };
+    }
+
+    // Clear dismissed updates for testing
+    clearDismissedUpdates() {
+        this.dismissedUpdates.clear();
+        this.saveDismissedUpdates();
+        console.log('UpdateUIManager: Dismissed updates cleared');
     }
 }
 

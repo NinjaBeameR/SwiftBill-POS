@@ -16,6 +16,7 @@ class UpdateManager {
         this.downloadProgress = 0;
         this.isCheckingForUpdate = false;
         this.lastUpdateCheck = 0;
+        this.updateInfo = null;
         this.updateCheckInterval = 6 * 60 * 60 * 1000; // 6 hours
         this.initialDelayMs = 30 * 1000; // 30 seconds after startup
         
@@ -52,17 +53,20 @@ class UpdateManager {
         autoUpdater.on('update-available', (info) => {
             console.log('UpdateManager: Update available:', info.version);
             this.updateAvailable = true;
-            this.notifyRenderer('update-available', {
+            this.updateInfo = {
                 version: info.version,
                 releaseDate: info.releaseDate,
                 releaseName: info.releaseName || `Version ${info.version}`,
                 releaseNotes: info.releaseNotes || 'Bug fixes and improvements'
-            });
+            };
+            this.notifyRenderer('update-available', this.updateInfo);
         });
 
         // No update available
         autoUpdater.on('update-not-available', (info) => {
             console.log('UpdateManager: No update available');
+            this.updateAvailable = false;
+            this.updateInfo = null;
             this.isCheckingForUpdate = false;
             this.notifyRenderer('update-not-available');
         });
@@ -114,15 +118,9 @@ class UpdateManager {
     setMainWindow(window) {
         this.mainWindow = window;
         
-        // Start update checking after initial delay
-        setTimeout(() => {
-            this.checkForUpdatesIfIdle();
-        }, this.initialDelayMs);
-
-        // Set up periodic update checks
-        setInterval(() => {
-            this.checkForUpdatesIfIdle();
-        }, this.updateCheckInterval);
+        // Note: Automatic update checking is disabled to prevent intrusive notifications
+        // Users can manually check for updates through the menu if needed
+        console.log('UpdateManager: Ready for manual update checks');
     }
 
     async checkForUpdatesIfIdle() {
@@ -242,8 +240,31 @@ class UpdateManager {
             updateDownloaded: this.updateDownloaded,
             downloadProgress: this.downloadProgress,
             isChecking: this.isCheckingForUpdate,
-            lastCheck: this.lastUpdateCheck
+            lastCheck: this.lastUpdateCheck,
+            updateInfo: this.updateInfo
         };
+    }
+
+    // Test method to simulate update scenarios (for development/testing only)
+    simulateUpdateScenario(scenario) {
+        if (scenario === 'update-available') {
+            const mockUpdateInfo = {
+                version: '1.0.3',
+                releaseDate: new Date().toISOString(),
+                releaseName: 'Version 1.0.3',
+                releaseNotes: 'Test update for debugging purposes'
+            };
+            
+            this.updateAvailable = true;
+            this.updateInfo = mockUpdateInfo;
+            this.notifyRenderer('update-available', mockUpdateInfo);
+            console.log('UpdateManager: Simulated update-available event');
+        } else if (scenario === 'no-update') {
+            this.updateAvailable = false;
+            this.updateInfo = null;
+            this.notifyRenderer('update-not-available');
+            console.log('UpdateManager: Simulated update-not-available event');
+        }
     }
 
     // Notify renderer process of update events

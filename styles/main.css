@@ -1178,7 +1178,7 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.4);
     z-index: 2000;
     display: none;
     align-items: center;
@@ -1187,28 +1187,30 @@ body {
 
 .update-modal-content {
     background: white;
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 0;
-    max-width: 500px;
-    width: 90%;
-    max-height: 80vh;
+    max-width: 400px;
+    width: 85%;
+    max-height: 70vh;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    border: 1px solid #e5e7eb;
 }
 
 .update-modal-header {
-    padding: 20px 25px;
+    padding: 15px 20px;
     border-bottom: 1px solid #e5e7eb;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #f8fafc;
+    background: #f9fafb;
 }
 
 .update-modal-header h3 {
     margin: 0;
-    color: #1f2937;
-    font-size: 1.25rem;
+    color: #374151;
+    font-size: 1.1rem;
+    font-weight: 600;
 }
 
 .btn-close {
@@ -1232,18 +1234,18 @@ body {
 }
 
 .update-modal-body {
-    padding: 25px;
-    max-height: 400px;
+    padding: 20px;
+    max-height: 300px;
     overflow-y: auto;
 }
 
 .update-modal-footer {
-    padding: 20px 25px;
+    padding: 15px 20px;
     border-top: 1px solid #e5e7eb;
     display: flex;
-    gap: 12px;
+    gap: 10px;
     justify-content: flex-end;
-    background: #f8fafc;
+    background: #f9fafb;
 }
 
 .update-progress {
@@ -1368,5 +1370,375 @@ body {
     
     .update-modal-footer {
         flex-direction: column;
+    }
+}
+
+/* Search Feedback Styles */
+.search-feedback {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    z-index: 10000;
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+    animation: slideInRight 0.3s ease;
+}
+
+.search-feedback.success {
+    background: #10b981;
+}
+
+.search-feedback.error {
+    background: #ef4444;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+}
+
+.search-feedback.info {
+    background: #3b82f6;
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+}
+
+.search-feedback.slide-out {
+    animation: slideOutRight 0.3s ease;
+}
+
+/* Status Message Styles */
+.status-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 30px 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    z-index: 9999;
+    text-align: center;
+    min-width: 300px;
+    animation: fadeIn 0.3s ease;
+}
+
+.status-message.success {
+    background: #10b981;
+    color: white;
+    border-color: #059669;
+}
+
+.status-message.error {
+    background: #ef4444;
+    color: white;
+    border-color: #dc2626;
+}
+
+.status-message.info {
+    background: #3b82f6;
+    color: white;
+    border-color: #2563eb;
+}
+
+.status-message.slide-out {
+    animation: slideOutRight 0.3s ease;
+}
+
+/* ===========================
+   AUTO-UPDATE UI STYLES
+   ========================= */
+
+/* Update Notification Bar */
+.update-notification {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 20px;
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    animation: slideDownNotification 0.3s ease;
+}
+
+@keyframes slideDownNotification {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.update-message {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+}
+
+.update-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.update-actions .btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.update-actions .btn-light {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.update-actions .btn-light:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.update-actions .btn-secondary {
+    background: rgba(0, 0, 0, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.update-actions .btn-secondary:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* Update Modal */
+.update-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10001;
+    animation: fadeInModal 0.3s ease;
+}
+
+@keyframes fadeInModal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.update-modal-content {
+    background: white;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    animation: slideInModal 0.3s ease;
+}
+
+@keyframes slideInModal {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.update-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.update-modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.update-modal-body {
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.update-modal-footer {
+    padding: 20px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+/* Update Progress */
+.update-progress {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 15px 0;
+}
+
+.update-progress-bar {
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+#auto-update-progress-text {
+    font-size: 0.9rem;
+    color: #6b7280;
+    text-align: center;
+    margin-top: 5px;
+}
+
+/* Release Notes */
+.release-notes {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.release-notes h4 {
+    margin: 0 0 10px 0;
+    color: #374151;
+}
+
+/* Update States */
+.update-error {
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+.update-restarting {
+    color: #059669;
+    background: #f0fdf4;
+    border: 1px solid #a7f3d0;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+/* Button Styles for Update Modal */
+.update-modal-footer .btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 80px;
+}
+
+.update-modal-footer .btn-primary {
+    background: #2563eb;
+    color: white;
+}
+
+.update-modal-footer .btn-primary:hover {
+    background: #1d4ed8;
+}
+
+.update-modal-footer .btn-success {
+    background: #059669;
+    color: white;
+}
+
+.update-modal-footer .btn-success:hover {
+    background: #047857;
+}
+
+.update-modal-footer .btn-secondary {
+    background: #6b7280;
+    color: white;
+}
+
+.update-modal-footer .btn-secondary:hover {
+    background: #4b5563;
+}
+
+.update-modal-footer .btn-info {
+    background: #0891b2;
+    color: white;
+}
+
+.update-modal-footer .btn-info:hover {
+    background: #0e7490;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+}
+
+.btn-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive adjustments for update UI */
+@media (max-width: 600px) {
+    .update-modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .update-modal-footer {
+        flex-direction: column;
+    }
+    
+    .update-modal-footer .btn {
+        width: 100%;
+    }
+    
+    .update-actions {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .update-actions .btn {
+        font-size: 0.8rem;
+        padding: 4px 8px;
     }
 }
