@@ -1,6 +1,6 @@
 {
-  "name": "udupi-pos",
-  "version": "1.0.3",
+  "name": "swiftbill-pos",
+  "version": "1.0.4",
   "description": "Restaurant POS Billing Software",
   "main": "main.js",
   "repository": {
@@ -29,12 +29,12 @@
     "build-portable": "electron-builder --win portable",
     "build-installer": "electron-builder --win nsis",
     "dist": "npm run build-portable && npm run build-installer",
-    "package": "electron-packager . \"Udupi POS\" --platform win32 --arch x64 --out dist --ignore node_modules --ignore dist --ignore .git --app-version 1.0.0",
+    "package": "electron-packager . \"SwiftBill-POS\" --platform win32 --arch x64 --out dist --ignore node_modules --ignore dist --ignore .git --app-version 1.0.0",
     "release": "electron-builder --win --publish always",
     "release-draft": "electron-builder --win --publish never",
     "auto-release": "node -e \"console.log('Use: npm run release-patch|minor|major for automated releases')\"",
     "release-patch": "node scripts/auto-version.js patch",
-    "release-minor": "node scripts/auto-version.js minor", 
+    "release-minor": "node scripts/auto-version.js minor",
     "release-major": "node scripts/auto-version.js major",
     "manual-release": "node scripts/manual-release.js",
     "verify-release": "node scripts/verify-release-system.js"
@@ -48,7 +48,7 @@
     "electron-updater": "^6.6.2"
   },
   "build": {
-    "appId": "com.udupipos.restaurant",
+    "appId": "com.swiftbillpos.restaurant",
     "productName": "SwiftBill-POS",
     "copyright": "Copyright © 2025 NMD",
     "directories": {
@@ -93,7 +93,7 @@
           ]
         }
       ],
-      "publisherName": "Udupi Krishnam Veg Restaurant",
+      "publisherName": "SwiftBill-POS",
       "requestedExecutionLevel": "asInvoker",
       "sign": null,
       "verifyUpdateCodeSignature": false,
@@ -107,13 +107,13 @@
       "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Udupi Restaurant POS",
+      "shortcutName": "SwiftBill-POS",
       "runAfterFinish": true,
-      "include": "build/installer.nsh",
-      "differentialPackage": true
+      "differentialPackage": true,
+      "artifactName": "SwiftSetup.exe"
     },
     "portable": {
-      "artifactName": "Udupi-POS-Portable-${version}.${ext}"
+      "artifactName": "SwiftBill-POS-Portable-${version}.${ext}"
     },
     "extraResources": [
       {

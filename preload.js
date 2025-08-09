@@ -1,5 +1,5 @@
 /**
- * Preload script for Udupi POS
+ * Preload script for SwiftBill-POS
  * Securely exposes main process APIs to renderer process
  */
 

@@ -1,5 +1,5 @@
 {
-  "name": "udupi-pos",
+  "name": "swiftbill-pos",
   "version": "1.0.0",
   "description": "Restaurant POS Billing Software",
   "main": "main.js",
@@ -29,7 +29,7 @@
     "build-portable": "electron-builder --win portable",
     "build-installer": "electron-builder --win nsis",
     "dist": "npm run build-portable && npm run build-installer",
-    "package": "electron-packager . \"Udupi POS\" --platform win32 --arch x64 --out dist --ignore node_modules --ignore dist --ignore .git --app-version 1.0.0"
+    "package": "electron-packager . \"SwiftBill-POS\" --platform win32 --arch x64 --out dist --ignore node_modules --ignore dist --ignore .git --app-version 1.0.0"
   },
   "devDependencies": {
     "electron": "^25.0.0",
@@ -37,9 +37,9 @@
     "electron-packager": "^17.1.2"
   },
   "build": {
-    "appId": "com.udupipos.restaurant",
-    "productName": "Udupi Restaurant POS",
-    "copyright": "Copyright © 2025 Udupi Krishnam Veg Restaurant",
+    "appId": "com.swiftbillpos.restaurant",
+    "productName": "SwiftBill-POS",
+    "copyright": "Copyright © 2025 SwiftBill-POS",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -65,11 +65,11 @@
           ]
         }
       ],
-      "publisherName": "Udupi Krishnam Veg Restaurant",
+      "publisherName": "SwiftBill-POS",
       "requestedExecutionLevel": "asInvoker"
     },
     "portable": {
-      "artifactName": "Udupi-POS-Portable-${version}.${ext}"
+      "artifactName": "SwiftBill-POS-Portable-${version}.${ext}"
     },
     "extraResources": [
       {

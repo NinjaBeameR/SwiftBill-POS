@@ -1,6 +1,6 @@
-# Udupi POS - Windows Executable Builder (PowerShell)
+# SwiftBill-POS - Windows Executable Builder (PowerShell)
 Write-Host "================================================" -ForegroundColor Cyan
-Write-Host "     Udupi POS - Windows Executable Builder" -ForegroundColor Yellow
+Write-Host "     SwiftBill-POS - Windows Executable Builder" -ForegroundColor Yellow
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "This script will create a Windows .exe file that:" -ForegroundColor Green
@@ -36,13 +36,13 @@ Write-Host ""
 Write-Host "Files created in 'dist' folder:" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "1. PORTABLE VERSION (recommended):" -ForegroundColor Green
-Write-Host "   - Udupi-POS-Portable-1.0.0.exe" -ForegroundColor White
+Write-Host "   - SwiftBill-POS-Portable-1.0.0.exe" -ForegroundColor White
 Write-Host "   - Single file that runs anywhere" -ForegroundColor Gray
 Write-Host "   - No installation needed" -ForegroundColor Gray
 Write-Host "   - Just copy and run!" -ForegroundColor Gray
 Write-Host ""
 Write-Host "2. INSTALLER VERSION:" -ForegroundColor Green
-Write-Host "   - Udupi Restaurant POS Setup 1.0.0.exe" -ForegroundColor White
+Write-Host "   - SwiftSetup.exe" -ForegroundColor White
 Write-Host "   - Creates desktop shortcuts" -ForegroundColor Gray
 Write-Host "   - Proper Windows installation" -ForegroundColor Gray
 Write-Host ""

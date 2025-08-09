@@ -65,7 +65,7 @@ A professional Point of Sale system built with Electron for restaurant operation
 1. **Clone the repository**
    ```bash
    https://github.com/NinjaBeameR/SwiftBill-POS.git
-   cd udupi-pos-system
+   cd swiftbill-pos-system
    ```
 
 2. **Install dependencies**

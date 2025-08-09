@@ -53,17 +53,133 @@ try {
 
 // Wait for DOM to load and then initialize
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Renderer: DOM content loaded, initializing...');
+    
+    // Test IPC communication right away
+    try {
+        const { ipcRenderer } = require('electron');
+        console.log('Renderer: ipcRenderer available, setting up test listener');
+        
+        // Listen for all auto-update events for debugging
+        ipcRenderer.on('auto-update-event', (event, data) => {
+            console.log('Renderer: Received auto-update-event!');
+            console.log('Renderer: Event data:', JSON.stringify(data, null, 2));
+        });
+        
+        console.log('Renderer: Test IPC listener set up successfully');
+    } catch (error) {
+        console.error('Renderer: Failed to set up test IPC listener:', error);
+    }
+    
     // Initialize the POS app
+    console.log('Renderer: Initializing POS app...');
     window.posApp = new POSApp();
+    console.log('Renderer: POS app initialized');
     
     // Initialize auto-update UI after a short delay
     if (AutoUpdateUI) {
         setTimeout(() => {
+            console.log('Renderer: Initializing AutoUpdateUI...');
             window.autoUpdateUI = new AutoUpdateUI();
-            console.log('AutoUpdateUI: Initialized and ready');
+            console.log('Renderer: AutoUpdateUI initialized and ready');
+            
+            // Test the connection
+            setTimeout(() => {
+                console.log('Renderer: Testing AutoUpdateUI connection...');
+                if (window.autoUpdateUI && window.autoUpdateUI.getUpdateStatus) {
+                    window.autoUpdateUI.getUpdateStatus()
+                        .then(result => console.log('Renderer: Update status test result:', result))
+                        .catch(error => console.error('Renderer: Update status test failed:', error));
+                }
+            }, 3000);
         }, 2000);
+    } else {
+        console.error('Renderer: AutoUpdateUI class not available!');
     }
+    
+    // Add debug buttons for testing
+    setTimeout(() => {
+        console.log('Renderer: Adding debug test buttons');
+        addDebugTestButtons();
+    }, 5000);
 });
+
+// Debug test buttons for functionality testing
+function addDebugTestButtons() {
+    const debugPanel = document.createElement('div');
+    debugPanel.id = 'debug-test-panel';
+    debugPanel.style.cssText = `
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        background: #f0f0f0;
+        border: 1px solid #ccc;
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 10001;
+        font-size: 12px;
+    `;
+    
+    debugPanel.innerHTML = `
+        <strong>Debug Tests</strong><br>
+        <button onclick="testUpdateCheck()" style="margin: 2px;">Test Update Check</button><br>
+        <button onclick="testMenuSearch()" style="margin: 2px;">Test Menu Search</button><br>
+        <button onclick="showUpdateNotification()" style="margin: 2px;">Show Update UI</button><br>
+        <button onclick="clearDebugLogs()" style="margin: 2px;">Clear Console</button>
+    `;
+    
+    document.body.appendChild(debugPanel);
+    console.log('Renderer: Debug test panel added');
+}
+
+// Test functions
+window.testUpdateCheck = async function() {
+    console.log('Debug: Testing manual update check...');
+    if (window.autoUpdateUI && window.autoUpdateUI.manualCheckForUpdates) {
+        try {
+            const result = await window.autoUpdateUI.manualCheckForUpdates();
+            console.log('Debug: Manual update check result:', result);
+        } catch (error) {
+            console.error('Debug: Manual update check failed:', error);
+        }
+    } else {
+        console.error('Debug: AutoUpdateUI not available for manual check');
+    }
+};
+
+window.testMenuSearch = function() {
+    console.log('Debug: Testing menu search...');
+    if (window.posApp && window.posApp.performSearch) {
+        window.posApp.performSearch('test');
+        console.log('Debug: Menu search test executed');
+    } else {
+        console.error('Debug: POS app not available for search test');
+    }
+};
+
+window.showUpdateNotification = function() {
+    console.log('Debug: Testing update notification display...');
+    if (window.autoUpdateUI) {
+        // Simulate an update available event
+        const mockUpdateInfo = {
+            version: '1.0.5',
+            releaseName: 'Test Update v1.0.5',
+            releaseDate: new Date().toISOString(),
+            releaseNotes: 'This is a test update notification.',
+            releaseUrl: 'https://github.com/NinjaBeameR/SwiftBill-POS/releases/tag/v1.0.5'
+        };
+        
+        window.autoUpdateUI.handleUpdateEvent('update-available', mockUpdateInfo);
+        console.log('Debug: Mock update notification triggered');
+    } else {
+        console.error('Debug: AutoUpdateUI not available');
+    }
+};
+
+window.clearDebugLogs = function() {
+    console.clear();
+    console.log('Debug: Console cleared');
+};
 
 class POSApp {
     constructor() {
@@ -340,12 +456,27 @@ class POSApp {
     }
 
     setupSearchListeners() {
+        console.log('POSApp: Setting up search listeners');
+        
         const searchInput = document.getElementById('menu-search');
         const searchResults = document.getElementById('search-results');
+
+        if (!searchInput) {
+            console.error('POSApp: Search input element not found!');
+            return;
+        }
+
+        if (!searchResults) {
+            console.error('POSApp: Search results element not found!');
+            return;
+        }
+
+        console.log('POSApp: Search elements found, setting up listeners');
 
         // Search input event with debouncing
         searchInput.addEventListener('input', (e) => {
             const query = e.target.value.trim();
+            console.log('POSApp: Search input event, query:', query);
             
             // Clear previous timer
             if (this.searchDebounceTimer) {
@@ -354,28 +485,38 @@ class POSApp {
             
             // Debounce search with 300ms delay
             this.searchDebounceTimer = setTimeout(() => {
+                console.log('POSApp: Executing debounced search for:', query);
                 this.performSearch(query);
             }, 300);
         });
 
         // Keyboard navigation in search
         searchInput.addEventListener('keydown', (e) => {
-            if (!searchResults.classList.contains('show')) return;
+            console.log('POSApp: Search keydown event:', e.key);
+            
+            if (!searchResults.classList.contains('show')) {
+                console.log('POSApp: Search results not visible, ignoring navigation');
+                return;
+            }
 
             switch(e.key) {
                 case 'ArrowDown':
                     e.preventDefault();
+                    console.log('POSApp: Navigate search down');
                     this.navigateSearchResults('down');
                     break;
                 case 'ArrowUp':
                     e.preventDefault();
+                    console.log('POSApp: Navigate search up');
                     this.navigateSearchResults('up');
                     break;
                 case 'Enter':
                     e.preventDefault();
+                    console.log('POSApp: Select highlighted search result');
                     this.selectHighlightedSearchResult();
                     break;
                 case 'Escape':
+                    console.log('POSApp: Hide search results');
                     this.hideSearchResults();
                     searchInput.blur();
                     break;
@@ -385,76 +526,138 @@ class POSApp {
         // Hide search results when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.search-container')) {
+                console.log('POSApp: Click outside search, hiding results');
                 this.hideSearchResults();
             }
         });
 
         // Clear search when focusing on search input
         searchInput.addEventListener('focus', () => {
+            console.log('POSApp: Search input focused');
             if (searchInput.value.trim()) {
+                console.log('POSApp: Re-performing search on focus');
                 this.performSearch(searchInput.value.trim());
             }
         });
+
+        console.log('POSApp: Search listeners setup complete');
     }
 
     performSearch(query) {
+        console.log('POSApp: performSearch called with query:', query);
+        
         const searchResults = document.getElementById('search-results');
         
         if (!query) {
+            console.log('POSApp: Empty query, hiding search results');
             this.hideSearchResults();
             return;
         }
 
-        // Filter menu items based on query - only match enabled item names
-        this.currentSearchResults = this.menuItems.filter(item => 
-            item.enabled !== false && item.name.toLowerCase().includes(query.toLowerCase())
-        );
+        if (!searchResults) {
+            console.error('POSApp: Search results element not found in performSearch!');
+            return;
+        }
 
-        this.selectedSearchIndex = -1; // Reset selection
-        this.renderSearchResults(query);
-        
-        if (this.currentSearchResults.length > 0) {
-            searchResults.classList.add('show');
-        } else {
+        if (!this.menuItems || !Array.isArray(this.menuItems)) {
+            console.error('POSApp: Menu items not available for search!');
+            console.error('POSApp: menuItems:', this.menuItems);
+            return;
+        }
+
+        console.log('POSApp: Searching through', this.menuItems.length, 'menu items');
+
+        try {
+            // Filter menu items based on query - only match enabled item names
+            this.currentSearchResults = this.menuItems.filter(item => {
+                if (!item || typeof item.name !== 'string') {
+                    console.warn('POSApp: Invalid menu item found:', item);
+                    return false;
+                }
+                
+                const isEnabled = item.enabled !== false;
+                const nameMatch = item.name.toLowerCase().includes(query.toLowerCase());
+                
+                return isEnabled && nameMatch;
+            });
+
+            console.log('POSApp: Search found', this.currentSearchResults.length, 'results');
+
+            this.selectedSearchIndex = -1; // Reset selection
+            this.renderSearchResults(query);
+            
+            if (this.currentSearchResults.length > 0) {
+                console.log('POSApp: Showing search results');
+                searchResults.classList.add('show');
+            } else {
+                console.log('POSApp: No results found, hiding search');
+                this.hideSearchResults();
+            }
+        } catch (error) {
+            console.error('POSApp: Error during search:', error);
+            console.error('POSApp: Error stack:', error.stack);
             this.hideSearchResults();
         }
     }
 
     renderSearchResults(query) {
+        console.log('POSApp: renderSearchResults called');
+        
         const searchResults = document.getElementById('search-results');
         
+        if (!searchResults) {
+            console.error('POSApp: Search results element not found in renderSearchResults!');
+            return;
+        }
+        
         if (this.currentSearchResults.length === 0) {
+            console.log('POSApp: No search results to display');
             searchResults.innerHTML = '<div class="search-no-results">No items found</div>';
             return;
         }
 
-        const resultsHTML = this.currentSearchResults.map((item, index) => {
-            // Apply discount for counter billing in search results
-            const finalPrice = (this.billingMode === 'counter') ? Math.max(0, item.price - 5) : item.price;
-            
-            // Highlight matching text
-            const highlightedName = this.highlightSearchText(item.name, query);
-            const highlightedCategory = this.highlightSearchText(item.category, query);
-            
-            return `
-                <div class="search-result-item" data-index="${index}" data-item-id="${item.id}">
-                    <div>
-                        <div class="search-result-name">${highlightedName}</div>
-                        <div class="search-result-category">${highlightedCategory}</div>
+        console.log('POSApp: Rendering', this.currentSearchResults.length, 'search results');
+
+        try {
+            const resultsHTML = this.currentSearchResults.map((item, index) => {
+                // Apply discount for counter billing in search results
+                const finalPrice = (this.billingMode === 'counter') ? Math.max(0, item.price - 5) : item.price;
+                
+                // Highlight matching text
+                const highlightedName = this.highlightSearchText(item.name, query);
+                const highlightedCategory = this.highlightSearchText(item.category || '', query);
+                
+                return `
+                    <div class="search-result-item" data-index="${index}" data-item-id="${item.id}">
+                        <div>
+                            <div class="search-result-name">${highlightedName}</div>
+                            <div class="search-result-category">${highlightedCategory}</div>
+                        </div>
+                        <div class="search-result-price">₹${finalPrice}</div>
                     </div>
-                    <div class="search-result-price">₹${finalPrice}</div>
-                </div>
-            `;
-        }).join('');
+                `;
+            }).join('');
 
-        searchResults.innerHTML = resultsHTML;
+            searchResults.innerHTML = resultsHTML;
+            console.log('POSApp: Search results HTML updated');
 
-        // Add click listeners to search results
-        searchResults.querySelectorAll('.search-result-item').forEach((item, index) => {
-            item.addEventListener('click', () => {
-                this.selectSearchResult(index);
+            // Add click listeners to search results
+            const resultItems = searchResults.querySelectorAll('.search-result-item');
+            console.log('POSApp: Adding click listeners to', resultItems.length, 'result items');
+            
+            resultItems.forEach((item, index) => {
+                item.addEventListener('click', () => {
+                    console.log('POSApp: Search result clicked, index:', index);
+                    this.selectSearchResult(index);
+                });
             });
-        });
+            
+            console.log('POSApp: Search results rendering complete');
+        } catch (error) {
+            console.error('POSApp: Error rendering search results:', error);
+            console.error('POSApp: Error stack:', error.stack);
+            searchResults.innerHTML = '<div class="search-no-results">Error displaying results</div>';
+        }
     }
 
     highlightSearchText(text, query) {
@@ -2176,7 +2379,7 @@ class POSApp {
                 <body>
                     <div class="header">
                         <h2>DEBUG AUTO-SILENT TEST</h2>
-                        <p>Udupi POS System</p>
+                        <p>SwiftBill-POS System</p>
                         <p>Time: ${new Date().toLocaleString('en-IN')}</p>
                     </div>
                     <p><strong>Auto-Detection:</strong> ✓ ACTIVE</p>
@@ -2454,7 +2657,7 @@ class POSApp {
                 <body>
                     <div class="test-header">
                         <h2>AUTO-SILENT PRINTER TEST</h2>
-                        <p>Udupi POS System</p>
+                        <p>SwiftBill-POS System</p>
                         <p>Date: ${new Date().toLocaleString('en-IN')}</p>
                     </div>
                     <div class="printer-info">
@@ -2529,7 +2732,7 @@ class POSApp {
             <body>
                 <div class="test-header">
                     <h2>PRINTER TEST</h2>
-                    <p>Udupi POS System</p>
+                    <p>SwiftBill-POS System</p>
                     <p>Date: ${new Date().toLocaleString('en-IN')}</p>
                 </div>
                 <p>This is a test print in preview mode.</p>

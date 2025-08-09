@@ -1,7 +1,7 @@
-# Udupi Restaurant POS - Windows Executable Build Guide
+# SwiftBill-POS - Windows Executable Build Guide
 
 ## 🎯 Overview
-This guide helps you convert your Udupi Restaurant POS application into a standalone Windows .exe file that can be distributed to restaurants without requiring Node.js or Electron installation.
+This guide helps you convert your SwiftBill-POS application into a standalone Windows .exe file that can be distributed to restaurants without requiring Node.js or Electron installation.
 
 ## 🚀 Quick Build Process
 
@@ -22,7 +22,7 @@ npm run dist
 After building, you'll find these files in the `dist` folder:
 
 ### 1. Portable Version (Recommended for Restaurants)
-- **File**: `Udupi-POS-Portable-1.0.0.exe`
+- **File**: `SwiftBill-POS-Portable-1.0.0.exe`
 - **Size**: ~150-200 MB
 - **Usage**: Single file that runs anywhere
 - **Benefits**: 
@@ -32,7 +32,7 @@ After building, you'll find these files in the `dist` folder:
   - Just copy and run!
 
 ### 2. Installer Version
-- **File**: `Udupi Restaurant POS Setup 1.0.0.exe`
+- **File**: `SwiftSetup.exe`
 - **Size**: ~120-150 MB
 - **Usage**: Traditional Windows installer
 - **Benefits**:
@@ -45,7 +45,7 @@ After building, you'll find these files in the `dist` folder:
 
 ### For Single Restaurant
 1. Build the portable version
-2. Copy `Udupi-POS-Portable-1.0.0.exe` to restaurant computer
+2. Copy `SwiftBill-POS-Portable-1.0.0.exe` to restaurant computer
 3. Run the .exe file - that's it!
 
 ### For Multiple Restaurants
@@ -162,7 +162,7 @@ npm run dist
 - App will auto-detect most printers
 
 ### Data Issues
-- Data is stored in: `%APPDATA%/udupi-pos/storage/`
+- Data is stored in: `%APPDATA%/swiftbill-pos/storage/`
 - To reset: Delete the storage folder
 - To backup: Copy the storage folder
 

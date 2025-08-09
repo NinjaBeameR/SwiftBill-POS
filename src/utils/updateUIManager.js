@@ -1,5 +1,5 @@
 /**
- * Update UI Manager for Udupi POS System
+ * Update UI Manager for SwiftBill-POS System
  * Handles update notifications and user interactions in the renderer process
  * Designed to be non-intrusive and professional
  */

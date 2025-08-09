@@ -1,7 +1,7 @@
 # Auto-Update System Documentation
 
 ## Overview
-The Udupi POS system now includes an automatic update feature that checks for new versions from GitHub releases and allows users to update the application seamlessly without interrupting ongoing operations.
+The SwiftBill-POS system now includes an automatic update feature that checks for new versions from GitHub releases and allows users to update the application seamlessly without interrupting ongoing operations.
 
 ## How It Works
 

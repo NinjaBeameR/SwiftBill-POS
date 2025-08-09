@@ -1,5 +1,5 @@
 /**
- * Manual Release Helper for Udupi POS
+ * Manual Release Helper for SwiftBill-POS
  * Provides interactive interface for manual version specification
  */
 
@@ -104,7 +104,7 @@ class ManualReleaseManager {
      */
     async startInteractiveRelease() {
         console.log('╔══════════════════════════════════════╗');
-        console.log('║     UDUPI POS MANUAL RELEASE TOOL   ║');
+        console.log('║   SWIFTBILL-POS MANUAL RELEASE TOOL ║');
         console.log('║     Restaurant Billing Software     ║');
         console.log('╚══════════════════════════════════════╝');
         console.log();

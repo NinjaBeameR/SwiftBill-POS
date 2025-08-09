@@ -64,7 +64,7 @@ const createWindow = () => {
     },
     show: false,
     icon: path.join(__dirname, 'assets', 'icon.png'), // Will fallback gracefully if not found
-    title: 'Udupi Restaurant POS'
+    title: 'SwiftBill-POS'
   });
 
   // Load the app
@@ -83,6 +83,12 @@ const createWindow = () => {
   // Show window when ready to prevent visual flash
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    
+    // Open DevTools in development for debugging
+    if (!app.isPackaged || process.env.NODE_ENV === 'development') {
+      mainWindow.webContents.openDevTools();
+      console.log('AutoUpdater: DevTools opened for debugging');
+    }
   });
 
   // Open DevTools in development
@@ -342,13 +348,24 @@ function initializeAutoUpdater() {
   autoUpdater.autoInstallOnAppQuit = false; // Manual control over install
   autoUpdater.allowPrerelease = false;
 
+  // Force dev update config for development testing
+  if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
+    console.log('AutoUpdater: Enabling dev update config for testing');
+    autoUpdater.forceDevUpdateConfig = true;
+    autoUpdater.allowDowngrade = true;
+  }
+
   console.log('AutoUpdater: Configured for GitHub releases');
+  console.log('AutoUpdater: App version:', app.getVersion());
+  console.log('AutoUpdater: App packaged:', app.isPackaged);
+  console.log('AutoUpdater: Environment:', process.env.NODE_ENV || 'production');
 
   // Set up all autoUpdater event listeners
   setupAutoUpdaterListeners();
 
   // Start checking for updates automatically (3 seconds after app start)
   setTimeout(() => {
+    console.log('AutoUpdater: Starting automatic update check...');
     checkForUpdatesAutomatically();
   }, 3000);
 }
@@ -357,13 +374,17 @@ function setupAutoUpdaterListeners() {
   // Event: Starting to check for updates
   autoUpdater.on('checking-for-update', () => {
     console.log('AutoUpdater: Checking for updates...');
+    console.log('AutoUpdater: Feed URL configured:', autoUpdater.getFeedURL());
     updateState.isChecking = true;
     notifyRenderer('checking-for-update');
   });
 
   // Event: Update is available
   autoUpdater.on('update-available', (info) => {
-    console.log('AutoUpdater: Update available:', info.version);
+    console.log('AutoUpdater: Update available!');
+    console.log('AutoUpdater: Current version:', app.getVersion());
+    console.log('AutoUpdater: Available version:', info.version);
+    console.log('AutoUpdater: Update info:', JSON.stringify(info, null, 2));
     
     updateState.isChecking = false;
     updateState.updateAvailable = true;
@@ -375,12 +396,17 @@ function setupAutoUpdaterListeners() {
       releaseUrl: `https://github.com/NinjaBeameR/SwiftBill-POS/releases/tag/v${info.version}`
     };
 
+    console.log('AutoUpdater: Checking if version was dismissed:', info.version);
+    console.log('AutoUpdater: Dismissed versions:', Array.from(updateState.dismissedVersions));
+
     // Only show notification if this version hasn't been dismissed
     if (!updateState.dismissedVersions.has(info.version)) {
+      console.log('AutoUpdater: Showing update notification for version:', info.version);
       notifyRenderer('update-available', updateState.updateInfo);
       
       // Start downloading silently
       setTimeout(() => {
+        console.log('AutoUpdater: Starting silent download...');
         downloadUpdateSilently();
       }, 2000);
     } else {
@@ -389,8 +415,12 @@ function setupAutoUpdaterListeners() {
   });
 
   // Event: No update available
-  autoUpdater.on('update-not-available', () => {
+  autoUpdater.on('update-not-available', (info) => {
     console.log('AutoUpdater: No updates available');
+    console.log('AutoUpdater: Current version is latest:', app.getVersion());
+    if (info) {
+      console.log('AutoUpdater: Latest release info:', JSON.stringify(info, null, 2));
+    }
     updateState.isChecking = false;
     updateState.updateAvailable = false;
     updateState.updateInfo = null;
@@ -424,27 +454,70 @@ function setupAutoUpdaterListeners() {
 
   // Event: Error occurred
   autoUpdater.on('error', (error) => {
-    console.error('AutoUpdater: Update error:', error);
+    console.error('AutoUpdater: Update error occurred');
+    console.error('AutoUpdater: Error message:', error.message);
+    console.error('AutoUpdater: Error stack:', error.stack);
+    console.error('AutoUpdater: Error details:', {
+      name: error.name,
+      code: error.code,
+      errno: error.errno,
+      syscall: error.syscall
+    });
+    
     updateState.isChecking = false;
+    
+    // Detailed error analysis
+    if (error.message.includes('ENOTFOUND') || error.message.includes('getaddrinfo')) {
+      console.error('AutoUpdater: Network error - check internet connection');
+    } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+      console.error('AutoUpdater: GitHub API rate limit or access denied');
+    } else if (error.message.includes('404') || error.message.includes('Not Found')) {
+      console.error('AutoUpdater: Repository or release not found');
+    } else if (error.message.includes('certificate') || error.message.includes('SSL')) {
+      console.error('AutoUpdater: SSL/Certificate error');
+    }
     
     // Only show error if user initiated the check, not for background checks
     if (updateState.userInitiated) {
+      console.log('AutoUpdater: Notifying renderer of error (user-initiated check)');
       notifyRenderer('update-error', {
         message: error.message || 'Update check failed'
       });
+    } else {
+      console.log('AutoUpdater: Background check failed, not showing error to user');
     }
     updateState.userInitiated = false;
   });
 }
 
 function checkForUpdatesAutomatically() {
-  if (updateState.isChecking) return;
+  if (updateState.isChecking) {
+    console.log('AutoUpdater: Update check already in progress, skipping...');
+    return;
+  }
   
   try {
+    console.log('AutoUpdater: Starting automatic update check');
+    console.log('AutoUpdater: Current app version:', app.getVersion());
+    console.log('AutoUpdater: Update feed URL:', 'https://api.github.com/repos/NinjaBeameR/SwiftBill-POS/releases/latest');
+    
     updateState.userInitiated = false; // This is an automatic check
+    
+    // Force update check even in development
+    if (!app.isPackaged) {
+      console.log('AutoUpdater: Development mode - attempting update check anyway...');
+    }
+    
     autoUpdater.checkForUpdates();
+    console.log('AutoUpdater: Update check initiated successfully');
   } catch (error) {
     console.error('AutoUpdater: Failed to check for updates:', error);
+    console.error('AutoUpdater: Error details:', {
+      message: error.message,
+      stack: error.stack,
+      isPackaged: app.isPackaged,
+      version: app.getVersion()
+    });
   }
 }
 
@@ -453,15 +526,30 @@ function downloadUpdateSilently() {
   
   try {
     console.log('AutoUpdater: Starting silent download...');
-    autoUpdater.downloadUpdate();
+    autoUpdater.downloadUpdate().catch(error => {
+      console.error('AutoUpdater: Download promise rejected:', error);
+      // Handle the error but don't let it become unhandled
+    });
   } catch (error) {
     console.error('AutoUpdater: Failed to download update:', error);
   }
 }
 
 function notifyRenderer(event, data = {}) {
+  console.log('AutoUpdater: Notifying renderer process');
+  console.log('AutoUpdater: Event:', event);
+  console.log('AutoUpdater: Data:', JSON.stringify(data, null, 2));
+  
   if (mainWindow && !mainWindow.isDestroyed()) {
+    console.log('AutoUpdater: Main window available, sending IPC message');
     mainWindow.webContents.send('auto-update-event', { event, data });
+    console.log('AutoUpdater: IPC message sent successfully');
+  } else {
+    console.error('AutoUpdater: Main window not available for notification');
+    console.error('AutoUpdater: Window state:', {
+      exists: !!mainWindow,
+      destroyed: mainWindow ? mainWindow.isDestroyed() : 'N/A'
+    });
   }
 }
 

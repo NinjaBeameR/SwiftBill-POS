@@ -1,5 +1,5 @@
 #!/bin/bash
-# Automated Release Script for Udupi POS
+# Automated Release Script for SwiftBill-POS
 # Usage: ./scripts/release.sh <version>
 # Example: ./scripts/release.sh 1.0.4
 
@@ -33,7 +33,7 @@ print_step() {
 print_header() {
     echo -e "${BLUE}"
     echo "╔══════════════════════════════════════╗"
-    echo "║        UDUPI POS RELEASE TOOL        ║"
+    echo "║      SWIFTBILL-POS RELEASE TOOL      ║"
     echo "║     Restaurant Billing Software      ║"
     echo "╚══════════════════════════════════════╝"
     echo -e "${NC}"
@@ -154,7 +154,7 @@ git commit -m "chore: bump version to $VERSION
 print_step "Creating and pushing tag $TAG..."
 git tag -a $TAG -m "Release $TAG
 
-## 🚀 Udupi POS $VERSION
+## 🚀 SwiftBill-POS $VERSION
 
 ### 📱 Restaurant POS Features
 - Complete billing and order management

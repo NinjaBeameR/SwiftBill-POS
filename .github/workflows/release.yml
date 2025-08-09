@@ -1,4 +1,4 @@
-name: Build and Release Udupi POS
+name: Build and Release SwiftBill-POS
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: udupi-pos-build-${{ github.ref_name }}
+          name: swiftbill-pos-build-${{ github.ref_name }}
           path: |
             dist/*.exe
             dist/latest.yml
@@ -53,11 +53,11 @@ jobs:
             dist/*.exe
             dist/latest.yml
           body: |
-            ## 🚀 Udupi POS ${{ github.ref_name }}
+            ## 🚀 SwiftBill-POS ${{ github.ref_name }}
             
             ### 📦 Installation
-            - **Installer**: Download `Udupi Restaurant POS Setup *.exe` for automatic installation
-            - **Portable**: Download `Udupi-POS-Portable-*.exe` for USB deployment
+            - **Installer**: Download `SwiftSetup.exe` for automatic installation
+            - **Portable**: Download `SwiftBill-POS-Portable-*.exe` for USB deployment
             
             ### 🔄 Auto-Update
             Existing users will be automatically notified of this update within their POS application.

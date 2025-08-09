@@ -1,6 +1,6 @@
-# 🚀 Udupi POS Automated Release System
+# 🚀 SwiftBill-POS Automated Release System
 
-This document explains how to use the automated release system for the Udupi Restaurant POS application.
+This document explains how to use the automated release system for the SwiftBill-POS application.
 
 ## 📋 Quick Start
 
@@ -50,8 +50,8 @@ scripts\release.bat 1.0.5         # Windows
 ## 📁 What Gets Built and Released
 
 ### Build Artifacts
-- **`Udupi Restaurant POS Setup X.X.X.exe`** - Installer for new/existing installations
-- **`Udupi-POS-Portable-X.X.X.exe`** - Portable version for USB deployment
+- **`SwiftSetup.exe`** - Installer for new/existing installations
+- **`SwiftBill-POS-Portable-X.X.X.exe`** - Portable version for USB deployment
 - **`latest.yml`** - Critical file for auto-updater functionality
 
 ### Release Assets
@@ -252,4 +252,4 @@ If a release has critical issues:
 
 **Happy Releasing! 🚀**
 
-The automated release system ensures your Udupi POS updates reach users efficiently and reliably.
+The automated release system ensures your SwiftBill-POS updates reach users efficiently and reliably.

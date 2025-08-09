@@ -1,5 +1,5 @@
 @echo off
-REM Automated Release Script for Udupi POS (Windows)
+REM Automated Release Script for SwiftBill-POS (Windows)
 REM Usage: scripts\release.bat <version>
 REM Example: scripts\release.bat 1.0.4
 
@@ -28,7 +28,7 @@ set TAG=v%VERSION%
 
 echo.
 echo ╔══════════════════════════════════════╗
-echo ║        UDUPI POS RELEASE TOOL        ║
+echo ║      SWIFTBILL-POS RELEASE TOOL      ║
 echo ║     Restaurant Billing Software      ║
 echo ╚══════════════════════════════════════╝
 echo.

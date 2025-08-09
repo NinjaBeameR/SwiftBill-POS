@@ -1,6 +1,6 @@
 @echo off
 echo ================================================
-echo     Udupi POS - Windows Executable Builder
+echo     SwiftBill-POS - Windows Executable Builder
 echo ================================================
 echo.
 echo This script will create a Windows .exe file that:
@@ -37,13 +37,13 @@ echo.
 echo Files created in 'dist' folder:
 echo.
 echo 1. PORTABLE VERSION (recommended):
-echo    - Udupi-POS-Portable-1.0.0.exe
+echo    - SwiftBill-POS-Portable-1.0.0.exe
 echo    - Single file that runs anywhere
 echo    - No installation needed
 echo    - Just copy and run!
 echo.
 echo 2. INSTALLER VERSION:
-echo    - Udupi Restaurant POS Setup 1.0.0.exe  
+echo    - SwiftSetup.exe  
 echo    - Creates desktop shortcuts
 echo    - Proper Windows installation
 echo.

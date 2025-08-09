@@ -1,5 +1,5 @@
 /**
- * Automated Version Management for Udupi POS
+ * Automated Version Management for SwiftBill-POS
  * Follows semantic versioning with automated release pipeline
  */
 
@@ -113,7 +113,7 @@ class AutoVersionManager {
      */
     async release(type) {
         console.log('╔══════════════════════════════════════╗');
-        console.log('║      UDUPI POS AUTO-RELEASE TOOL    ║');
+        console.log('║    SWIFTBILL-POS AUTO-RELEASE TOOL  ║');
         console.log('║     Restaurant Billing Software     ║');
         console.log('╚══════════════════════════════════════╝');
         console.log();
@@ -179,7 +179,7 @@ if (require.main === module) {
     const type = process.argv[2];
     
     if (!type) {
-        console.log('Udupi POS Automated Release Tool');
+        console.log('SwiftBill-POS Automated Release Tool');
         console.log('Usage: node auto-version.js <type>');
         console.log();
         console.log('Version Types:');

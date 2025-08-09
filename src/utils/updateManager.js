@@ -1,5 +1,5 @@
 /**
- * Update Manager for Udupi POS System
+ * Update Manager for SwiftBill-POS System
  * Handles automatic updates from GitHub releases
  * Non-intrusive design that never interrupts POS operations
  */

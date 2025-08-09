@@ -130,7 +130,7 @@ class ReleaseSystemVerifier {
 
     async runVerification() {
         console.log('╔══════════════════════════════════════╗');
-        console.log('║    UDUPI POS RELEASE SYSTEM CHECK   ║');
+        console.log('║  SWIFTBILL-POS RELEASE SYSTEM CHECK ║');
         console.log('║     Restaurant Billing Software     ║');
         console.log('╚══════════════════════════════════════╝');
         console.log();

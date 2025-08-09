@@ -1,5 +1,5 @@
 /**
- * Auto-Update UI Handler for Udupi POS System
+ * Auto-Update UI Handler for SwiftBill-POS System
  * Brand new implementation for electron-updater integration
  * Handles all update notifications and user interactions
  */
@@ -16,6 +16,8 @@ class AutoUpdateUI {
     init() {
         if (this.isInitialized) return;
         
+        console.log('AutoUpdateUI: Starting initialization...');
+        
         // Create update UI elements
         this.createUpdateElements();
         
@@ -25,8 +27,43 @@ class AutoUpdateUI {
         // Check current update status on startup
         this.checkCurrentStatus();
         
+        // Add debug overlay for testing
+        this.addDebugOverlay();
+        
         this.isInitialized = true;
         console.log('AutoUpdateUI: Initialized successfully');
+    }
+
+    addDebugOverlay() {
+        // Create a simple debug indicator
+        const debugDiv = document.createElement('div');
+        debugDiv.id = 'auto-update-debug';
+        debugDiv.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #333;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 10000;
+            min-width: 200px;
+        `;
+        debugDiv.innerHTML = `
+            <strong>AutoUpdate Debug</strong><br>
+            Status: Initialized<br>
+            <span id="debug-status">Waiting for events...</span>
+        `;
+        document.body.appendChild(debugDiv);
+        console.log('AutoUpdateUI: Debug overlay added');
+    }
+
+    updateDebugStatus(message) {
+        const statusEl = document.getElementById('debug-status');
+        if (statusEl) {
+            statusEl.innerHTML = message;
+        }
     }
 
     createUpdateElements() {
@@ -124,62 +161,118 @@ class AutoUpdateUI {
     }
 
     setupEventListeners() {
+        console.log('AutoUpdateUI: Setting up IPC event listeners');
+        
         // Listen for auto-update events from main process
-        if (typeof ipcRenderer !== 'undefined') {
-            ipcRenderer.on('auto-update-event', (event, { event: updateEvent, data }) => {
-                this.handleUpdateEvent(updateEvent, data);
-            });
+        if (typeof require === 'function') {
+            try {
+                const { ipcRenderer } = require('electron');
+                console.log('AutoUpdateUI: ipcRenderer available, setting up listener');
+                
+                ipcRenderer.on('auto-update-event', (event, { event: updateEvent, data }) => {
+                    console.log('AutoUpdateUI: Received auto-update event');
+                    console.log('AutoUpdateUI: Event type:', updateEvent);
+                    console.log('AutoUpdateUI: Event data:', JSON.stringify(data, null, 2));
+                    
+                    this.handleUpdateEvent(updateEvent, data);
+                });
+                
+                console.log('AutoUpdateUI: IPC listener registered successfully');
+            } catch (error) {
+                console.error('AutoUpdateUI: Failed to set up IPC listener:', error);
+            }
+        } else {
+            console.error('AutoUpdateUI: require() not available - cannot set up IPC listener');
         }
     }
 
     handleUpdateEvent(event, data) {
-        console.log(`AutoUpdateUI: Received event: ${event}`, data);
+        console.log('AutoUpdateUI: Handling update event:', event);
+        console.log('AutoUpdateUI: Event data:', JSON.stringify(data, null, 2));
+        
+        // Update debug overlay
+        this.updateDebugStatus(`Event: ${event}<br>Data: ${JSON.stringify(data, null, 1)}`);
 
         switch (event) {
             case 'checking-for-update':
+                console.log('AutoUpdateUI: Update check started');
+                this.updateDebugStatus('Checking for updates...');
                 this.showCheckingState();
                 break;
 
             case 'update-available':
+                console.log('AutoUpdateUI: Update available, showing notification');
+                this.updateDebugStatus(`Update available: ${data.version}`);
                 this.updateInfo = data;
                 this.showUpdateAvailable(data);
                 break;
 
             case 'update-not-available':
+                console.log('AutoUpdateUI: No update available');
+                this.updateDebugStatus('No update available');
                 this.hideNotificationBar();
                 break;
 
             case 'download-progress':
+                console.log('AutoUpdateUI: Download progress:', data.percent + '%');
+                this.updateDebugStatus(`Downloading: ${data.percent}%`);
                 this.updateDownloadProgress(data);
                 break;
 
             case 'update-downloaded':
+                console.log('AutoUpdateUI: Update downloaded, ready to install');
+                this.updateDebugStatus('Update ready to install!');
                 this.showUpdateReady(data);
                 break;
 
             case 'update-error':
+                console.error('AutoUpdateUI: Update error:', data.message);
+                this.updateDebugStatus(`Error: ${data.message}`);
                 this.showUpdateError(data);
                 break;
 
             case 'app-restarting':
+                console.log('AutoUpdateUI: App restarting');
+                this.updateDebugStatus('Restarting app...');
                 this.showRestartMessage();
                 break;
+                
+            default:
+                console.warn('AutoUpdateUI: Unknown event:', event);
+                this.updateDebugStatus(`Unknown event: ${event}`);
         }
     }
 
     showUpdateAvailable(info) {
+        console.log('AutoUpdateUI: showUpdateAvailable called');
+        console.log('AutoUpdateUI: Update info:', JSON.stringify(info, null, 2));
+        console.log('AutoUpdateUI: Dismissed updates:', Array.from(this.dismissedUpdates));
+        
         // Check if this update was already dismissed
         if (this.dismissedUpdates.has(info.version)) {
             console.log('AutoUpdateUI: Update was previously dismissed, not showing notification');
             return;
         }
 
+        console.log('AutoUpdateUI: Showing update notification');
         const messageText = document.getElementById('auto-update-message-text');
         if (messageText) {
             messageText.textContent = `Update available: ${info.releaseName || info.version}`;
+            console.log('AutoUpdateUI: Updated message text');
+        } else {
+            console.error('AutoUpdateUI: Message text element not found');
         }
 
         this.showNotificationBar();
+        console.log('AutoUpdateUI: Notification bar should be visible');
+        
+        // Test alert to verify the function is called
+        setTimeout(() => {
+            console.log('AutoUpdateUI: Showing test alert for update:', info.version);
+            if (typeof alert !== 'undefined') {
+                alert(`✅ AUTO-UPDATE WORKING!\n\nUpdate Available: ${info.version}\nRelease: ${info.releaseName}\n\nThe auto-update system is detecting updates correctly!`);
+            }
+        }, 1000);
     }
 
     showUpdateReady(info) {
@@ -391,11 +484,10 @@ class AutoUpdateUI {
     // Public method for manual update checks
     async manualCheckForUpdates() {
         try {
-            if (typeof ipcRenderer !== 'undefined') {
-                const result = await ipcRenderer.invoke('check-for-updates');
-                console.log('AutoUpdateUI: Manual check result:', result);
-                return result;
-            }
+            const { ipcRenderer } = require('electron');
+            const result = await ipcRenderer.invoke('check-for-updates');
+            console.log('AutoUpdateUI: Manual check result:', result);
+            return result;
         } catch (error) {
             console.error('AutoUpdateUI: Manual check failed:', error);
             return { success: false, error: error.message };
@@ -404,12 +496,27 @@ class AutoUpdateUI {
 
     // Test methods for development
     async testUpdateScenario(scenario) {
-        if (typeof ipcRenderer !== 'undefined') {
+        try {
+            const { ipcRenderer } = require('electron');
             const result = await ipcRenderer.invoke('test-update-scenario', scenario);
             console.log('AutoUpdateUI: Test scenario result:', result);
             return result;
+        } catch (error) {
+            console.error('AutoUpdateUI: Test scenario failed:', error);
+            return { success: false, error: error.message };
         }
-        return { success: false, error: 'IPC not available' };
+    }
+
+    async getUpdateStatus() {
+        try {
+            const { ipcRenderer } = require('electron');
+            const result = await ipcRenderer.invoke('get-update-status');
+            console.log('AutoUpdateUI: Update status:', result);
+            return result;
+        } catch (error) {
+            console.error('AutoUpdateUI: Failed to get update status:', error);
+            return { success: false, error: error.message };
+        }
     }
 
     clearDismissedUpdates() {

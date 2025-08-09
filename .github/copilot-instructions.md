@@ -1,6 +1,6 @@
 <!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
 
-# Udupi POS System - Copilot Instructions
+# SwiftBill-POS System - Copilot Instructions
 
 This is an Electron-based restaurant Point of Sale (POS) system with a modular architecture.
 
