@@ -54,20 +54,10 @@
       "!node_modules/**/*",
       "!dist/**/*",
       "!.git/**/*",
-      "!README.md",
-      "!*.md",
-      "!build-exe.*",
-      "!test-*",
-      "!.*"
+      "!README.md"
     ],
     "win": {
       "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
         {
           "target": "portable",
           "arch": [
@@ -76,22 +66,7 @@
         }
       ],
       "publisherName": "Udupi Krishnam Veg Restaurant",
-      "requestedExecutionLevel": "asInvoker",
-      "sign": null,
-      "verifyUpdateCodeSignature": false,
-      "signAndEditExecutable": false,
-      "signDlls": false
-    },
-    "nsis": {
-      "oneClick": false,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
-      "deleteAppDataOnUninstall": false,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "Udupi Restaurant POS",
-      "runAfterFinish": true,
-      "include": "build/installer.nsh"
+      "requestedExecutionLevel": "asInvoker"
     },
     "portable": {
       "artifactName": "Udupi-POS-Portable-${version}.${ext}"

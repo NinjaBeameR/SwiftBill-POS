@@ -64,7 +64,7 @@ A professional Point of Sale system built with Electron for restaurant operation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/udupi-pos-system.git
+   https://github.com/NinjaBeameR/SwiftBill-POS.git
    cd udupi-pos-system
    ```
 
@@ -158,7 +158,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support and questions:
 - Create an issue in this repository
-- Email: [your-email@example.com]
+- Email: [nandanmd@proton.me]
 
 ## 🙏 Acknowledgments
 

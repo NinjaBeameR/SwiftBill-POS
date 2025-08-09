@@ -221,6 +221,269 @@ class BillingScreen {
         }
     }
 
+    async autoSilentPrintKOTs() {
+        console.log('=== KOT PRINTING DEBUG START ===');
+        console.log('Current order items:', this.currentOrder.length);
+        
+        if (this.currentOrder.length === 0) {
+            console.log('❌ No items in order - skipping KOT');
+            return { success: true, kotsPrinted: 0, kotsTotal: 0 };
+        }
+        
+        // Split items by kotGroup - CHECK MENU ITEMS FOR PROPER CLASSIFICATION
+        const kitchenItems = [];
+        const drinksItems = [];
+        
+        console.log('--- ITEM CLASSIFICATION DEBUG ---');
+        this.currentOrder.forEach(orderItem => {
+            const menuItem = this.menuItems.find(mi => mi.id === orderItem.id);
+            console.log(`🔍 Item: ${orderItem.name} (ID: ${orderItem.id})`);
+            console.log(`   Menu Item Found: ${!!menuItem}`);
+            console.log(`   Menu Item kotGroup: ${menuItem?.kotGroup}`);
+            console.log(`   Order Item kotGroup: ${orderItem.kotGroup}`);
+            
+            if (menuItem) {
+                if (menuItem.kotGroup === 'kitchen') {
+                    kitchenItems.push(orderItem);
+                    console.log(`   ✅ Added to KITCHEN KOT`);
+                } else if (menuItem.kotGroup === 'drinks') {
+                    drinksItems.push(orderItem);
+                    console.log(`   ✅ Added to DRINKS KOT`);
+                } else {
+                    console.log(`   ⚠️ Unknown kotGroup: ${menuItem.kotGroup} - adding to KITCHEN`);
+                    kitchenItems.push(orderItem);
+                }
+            } else {
+                console.log(`   ❌ Menu item not found - adding to KITCHEN`);
+                kitchenItems.push(orderItem);
+            }
+        });
+        
+        console.log(`🍳 FINAL: Kitchen items: ${kitchenItems.length}`);
+        console.log(`☕ FINAL: Drinks items: ${drinksItems.length}`);
+        
+        let kotsPrinted = 0;
+        let kotsTotal = 0;
+        
+        // Print Kitchen KOT if items exist
+        if (kitchenItems.length > 0) {
+            kotsTotal++;
+            console.log('🍳 === KITCHEN KOT PRINTING START ===');
+            
+            try {
+                const kitchenOrderData = {
+                    tableNumber: this.currentTable,
+                    locationNumber: this.currentTable,
+                    locationType: 'table',
+                    items: kitchenItems,
+                    timestamp: new Date().toISOString(),
+                    kotType: 'kitchen'
+                };
+                
+                const kotContent = this.generateKOTContent(kitchenOrderData);
+                console.log('🍳 Kitchen KOT content generated, printing...');
+                
+                const result = await window.require('electron').ipcRenderer.invoke('auto-silent-print', kotContent, 'kot');
+                
+                if (result.success) {
+                    kotsPrinted++;
+                    console.log('🍳 ✅ Kitchen KOT printed successfully');
+                } else {
+                    console.error('🍳 ❌ Kitchen KOT print failed:', result.error);
+                }
+            } catch (error) {
+                console.error('🍳 ❌ Kitchen KOT print error:', error);
+            }
+        }
+        
+        // Print Drinks KOT if items exist
+        if (drinksItems.length > 0) {
+            kotsTotal++;
+            console.log('☕ === DRINKS KOT PRINTING START ===');
+            
+            try {
+                const drinksOrderData = {
+                    tableNumber: this.currentTable,
+                    locationNumber: this.currentTable,
+                    locationType: 'table',
+                    items: drinksItems,
+                    timestamp: new Date().toISOString(),
+                    kotType: 'drinks'
+                };
+                
+                const kotContent = this.generateKOTContent(drinksOrderData);
+                console.log('☕ Drinks KOT content generated, printing...');
+                
+                const result = await window.require('electron').ipcRenderer.invoke('auto-silent-print', kotContent, 'kot');
+                
+                if (result.success) {
+                    kotsPrinted++;
+                    console.log('☕ ✅ Drinks KOT printed successfully');
+                } else {
+                    console.error('☕ ❌ Drinks KOT print failed:', result.error);
+                }
+            } catch (error) {
+                console.error('☕ ❌ Drinks KOT print error:', error);
+            }
+        }
+        
+        console.log(`=== KOT PRINTING COMPLETE: ${kotsPrinted}/${kotsTotal} KOTs printed ===`);
+        
+        return {
+            success: kotsPrinted > 0,
+            kotsPrinted,
+            kotsTotal,
+            kitchenItems: kitchenItems.length,
+            drinksItems: drinksItems.length
+        };
+    }
+
+    generateKOTContent(orderData) {
+        const { tableNumber, items, timestamp, kotType } = orderData;
+        const date = new Date(timestamp);
+        
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>KOT - ${kotType.toUpperCase()}</title>
+                <meta charset="UTF-8">
+                <style>
+                    @media print {
+                        @page {
+                            size: 80mm auto;
+                            margin: 0;
+                        }
+                        body { 
+                            margin: 0 !important; 
+                            padding: 2mm !important; 
+                        }
+                        body, table { 
+                            font-size: 12px;
+                        }
+                        * { 
+                            -webkit-print-color-adjust: exact !important; 
+                            color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                            box-sizing: border-box;
+                            color: #000000 !important;
+                            border-color: #000000 !important;
+                        }
+                    }
+                    body { 
+                        font-family: 'Courier New', monospace !important;
+                        font-size: 12px;
+                        font-weight: bold !important;
+                        margin: 0; 
+                        padding: 2mm;
+                        width: 270px;
+                        max-width: 270px;
+                        background: white !important;
+                        color: #000000 !important;
+                        line-height: 1.3;
+                        -webkit-font-smoothing: none !important;
+                        font-smoothing: none !important;
+                        text-rendering: geometricPrecision !important;
+                        box-sizing: border-box;
+                        word-wrap: break-word;
+                        overflow-wrap: break-word;
+                        image-rendering: pixelated !important;
+                    }
+                    .header { 
+                        text-align: center; 
+                        border-bottom: 2px solid #000; 
+                        padding-bottom: 6px; 
+                        margin-bottom: 8px; 
+                        box-sizing: border-box;
+                    }
+                    .kot-title { 
+                        font-weight: bold !important;
+                        font-size: 16px;
+                        margin-bottom: 4px; 
+                        color: #000000 !important;
+                        letter-spacing: 0.5px;
+                        word-wrap: break-word;
+                    }
+                    .table-info { 
+                        font-size: 12px;
+                        margin: 2px 0; 
+                        font-weight: bold !important;
+                        color: #000000 !important;
+                        line-height: 1.2;
+                        word-wrap: break-word;
+                    }
+                    .items { 
+                        margin: 8px 0; 
+                        padding: 4px 0; 
+                        border-top: 1px solid #000; 
+                        border-bottom: 1px solid #000;
+                    }
+                    .item { 
+                        margin: 3px 0; 
+                        font-size: 12px; 
+                        font-weight: bold !important;
+                        color: #000000 !important;
+                        word-wrap: break-word;
+                        overflow-wrap: break-word;
+                    }
+                    .footer { 
+                        text-align: center; 
+                        margin-top: 8px; 
+                        font-size: 10px; 
+                        font-weight: bold !important;
+                        color: #000000 !important;
+                    }
+                    .separator { 
+                        border-top: 1px solid #000; 
+                        margin: 4px 0; 
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="kot-title">${kotType.toUpperCase()} ORDER</div>
+                    <div class="table-info">Table: ${tableNumber}</div>
+                    <div class="table-info">Time: ${date.toLocaleTimeString()}</div>
+                    <div class="table-info">Date: ${date.toLocaleDateString()}</div>
+                </div>
+                
+                <div class="items">
+                    ${items.map(item => `<div class="item">${item.quantity}x ${item.name}</div>`).join('')}
+                </div>
+                
+                <div class="separator"></div>
+                
+                <div class="footer">
+                    Total Items: ${items.reduce((sum, item) => sum + item.quantity, 0)}
+                </div>
+            </body>
+            </html>
+        `;
+    }
+
+    async printOrderAutoSilent() {
+        console.log('🚀 printOrderAutoSilent called');
+        
+        if (this.currentOrder.length === 0) {
+            console.log('❌ No items to print');
+            return;
+        }
+        
+        try {
+            console.log('📋 Starting auto silent KOT printing...');
+            const kotResult = await this.autoSilentPrintKOTs();
+            console.log('📋 KOT printing result:', kotResult);
+            
+            if (kotResult.success) {
+                console.log(`✅ KOT printing successful: ${kotResult.kotsPrinted}/${kotResult.kotsTotal} KOTs printed`);
+            } else {
+                console.error('❌ KOT printing failed');
+            }
+        } catch (error) {
+            console.error('❌ Error in printOrderAutoSilent:', error);
+        }
+    }
+
     handleKeyPress(e) {
         // Keyboard shortcuts for billing screen
         switch(e.key) {
@@ -229,7 +492,7 @@ class BillingScreen {
                 break;
             case 'F1':
                 e.preventDefault();
-                window.posApp.printKOT();
+                this.printOrderAutoSilent();
                 break;
             case 'F2':
                 e.preventDefault();

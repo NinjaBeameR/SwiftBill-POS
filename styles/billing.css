@@ -299,13 +299,153 @@
 
 .order-item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     padding: 12px;
     margin-bottom: 10px;
     background: #f8f9fa;
     border-radius: 8px;
     border-left: 4px solid #667eea;
+    transition: all 0.2s ease;
+}
+
+.order-item.parcel-item {
+    border-left-color: #28a745;
+    background: #f8fff8;
+}
+
+.order-item-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.order-item-parcel {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 8px;
+}
+
+/* Parcel Controls */
+.parcel-controls {
+    margin-bottom: 15px;
+    padding: 12px;
+    background: #fff3cd;
+    border-radius: 8px;
+    border-left: 4px solid #ffc107;
+}
+
+.parcel-bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.bulk-parcel-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    background: #28a745;
+    color: white;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.bulk-parcel-btn:hover {
+    background: #218838;
+    transform: translateY(-1px);
+}
+
+.bulk-parcel-btn.clear {
+    background: #6c757d;
+}
+
+.bulk-parcel-btn.clear:hover {
+    background: #5a6268;
+}
+
+.parcel-info {
+    font-size: 0.8rem;
+    color: #856404;
+    font-weight: 500;
+}
+
+/* Parcel Toggle */
+.parcel-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.parcel-toggle input[type="checkbox"] {
+    appearance: none;
+    width: 40px;
+    height: 20px;
+    background: #ccc;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.parcel-toggle input[type="checkbox"]:checked {
+    background: #28a745;
+}
+
+.parcel-toggle input[type="checkbox"]::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.parcel-toggle input[type="checkbox"]:checked::before {
+    transform: translateX(20px);
+}
+
+.parcel-label {
+    font-weight: 500;
+    color: #28a745;
+}
+
+/* Order Item Price Updates */
+.order-item-price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-weight: 600;
+    min-width: 80px;
+    text-align: right;
+}
+
+.base-price {
+    color: #2d3748;
+    font-size: 0.9rem;
+}
+
+.parcel-charge {
+    color: #28a745;
+    font-size: 0.8rem;
+    margin-top: 2px;
+}
+
+.total-price {
+    color: #28a745;
+    font-size: 1rem;
+    font-weight: 700;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 2px;
+    margin-top: 2px;
+    min-width: 70px;
 }
 
 .order-item-name {

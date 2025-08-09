@@ -1,5 +1,46 @@
 // Main renderer process - handles UI logic and component coordination
 const { ipcRenderer } = require('electron');
+const path = require('path');
+const fs = require('fs');
+
+// Data path management for both development and production
+class DataPathManager {
+    constructor() {
+        this.dataPath = null;
+        this.initialized = false;
+    }
+    
+    async initialize() {
+        if (this.initialized) return this.dataPath;
+        
+        try {
+            // Get the correct data path from main process
+            this.dataPath = await ipcRenderer.invoke('get-data-path');
+            this.initialized = true;
+            console.log('Data path initialized:', this.dataPath);
+        } catch (error) {
+            // Fallback to development path
+            this.dataPath = path.join(__dirname, 'src', 'storage');
+            this.initialized = true;
+            console.log('Using development data path:', this.dataPath);
+        }
+        
+        return this.dataPath;
+    }
+    
+    async getMenuPath() {
+        await this.initialize();
+        return path.join(this.dataPath, 'menu.json');
+    }
+    
+    async getOrdersPath() {
+        await this.initialize();
+        return path.join(this.dataPath, 'orders.json');
+    }
+}
+
+// Global data path manager instance
+const dataPathManager = new DataPathManager();
 
 // Wait for DOM to load and then initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -19,6 +60,17 @@ class POSApp {
         this.searchDebounceTimer = null;
         this.currentSearchResults = [];
         this.selectedSearchIndex = -1;
+        
+        // Settings for restaurant info
+        this.settings = {
+            restaurant: {
+                name: "UDUPI KRISHNAM VEG",
+                contact: "+91 12345 67890",
+                address: "Bengaluru - Chennai Hwy, Konnappana Agrahara, Electronic City, Bengaluru, Karnataka - 560100",
+                gstin: "A unit of Salt and Pepper",
+                fssai: "12345678901234"
+            }
+        };
         
         this.init();
     }
@@ -64,32 +116,116 @@ class POSApp {
     async loadMenuItems() {
         try {
             const fs = require('fs');
-            const path = require('path');
-            const menuPath = path.join(__dirname, 'src', 'storage', 'menu.json');
+            const menuPath = await dataPathManager.getMenuPath();
             const menuData = JSON.parse(fs.readFileSync(menuPath, 'utf8'));
             this.menuItems = menuData.items || [];
+            
+            // DEBUG: Check if kotGroup fields are present in loaded menu items
+            console.log('🔍 MENU DEBUG: Total items loaded:', this.menuItems.length);
+            const sampleItems = this.menuItems.slice(0, 5);
+            sampleItems.forEach(item => {
+                console.log(`🔍 Menu item "${item.name}" (ID: ${item.id}) - kotGroup: "${item.kotGroup}"`);
+            });
+            
+            // Check if any items are missing kotGroup
+            const itemsWithoutKotGroup = this.menuItems.filter(item => !item.kotGroup);
+            console.log(`⚠️ Items missing kotGroup: ${itemsWithoutKotGroup.length}/${this.menuItems.length}`);
+            
+            // Load settings from menu data
+            if (menuData.settings) {
+                this.settings = {
+                    ...this.settings,
+                    ...menuData.settings
+                };
+            }
+            
+            // Load restaurant info
+            if (menuData.restaurant) {
+                this.settings.restaurant = {
+                    ...this.settings.restaurant,
+                    ...menuData.restaurant
+                };
+            }
+            
+            // Update parcel charge display after loading settings
+            this.updateSelectiveParcelChargeDisplay();
+            
+            // Ensure all items have enabled field (default to true for backward compatibility)
+            let needsUpdate = false;
+            this.menuItems = this.menuItems.map(item => {
+                if (item.enabled === undefined) {
+                    needsUpdate = true;
+                    return { ...item, enabled: true };
+                }
+                return item;
+            });
+            
+            // CRITICAL FIX: Ensure all items have kotGroup field
+            let kotGroupsAssigned = 0;
+            this.menuItems = this.menuItems.map(item => {
+                if (!item.kotGroup) {
+                    kotGroupsAssigned++;
+                    needsUpdate = true;
+                    
+                    // Assign kotGroup based on category and name
+                    let kotGroup = 'kitchen'; // Default to kitchen
+                    
+                    const itemName = item.name.toLowerCase();
+                    const itemCategory = (item.category || '').toLowerCase();
+                    
+                    // Drinks classification (tea, coffee, beverages)
+                    if (itemCategory.includes('tea') || itemCategory.includes('coffee') ||
+                        itemCategory.includes('beverage') || itemCategory.includes('drink') ||
+                        itemName.includes('tea') || itemName.includes('coffee') ||
+                        itemName.includes('boost') || itemName.includes('horlicks') ||
+                        itemName.includes('badam') || itemName.includes('kashaya')) {
+                        kotGroup = 'drinks';
+                    }
+                    
+                    console.log(`🔧 Auto-assigning kotGroup "${kotGroup}" to "${item.name}" (category: ${item.category})`);
+                    
+                    return { ...item, kotGroup };
+                }
+                return item;
+            });
+            
+            if (kotGroupsAssigned > 0) {
+                console.log(`✅ Auto-assigned kotGroup to ${kotGroupsAssigned} items`);
+            }
+            
+            // Auto-save if we added enabled fields or applied default settings
+            if (needsUpdate) {
+                const updatedMenuData = {
+                    restaurant: this.settings.restaurant,
+                    settings: this.settings,
+                    items: this.menuItems
+                };
+                fs.writeFileSync(menuPath, JSON.stringify(updatedMenuData, null, 2), 'utf8');
+                console.log('📝 Menu file updated with kotGroup assignments');
+            }
+            
         } catch (error) {
             console.error('Error loading menu items:', error);
             // Fallback to hardcoded items if loading fails
             this.menuItems = [
-                { id: 1, name: 'Masala Dosa', price: 80, category: 'South Indian' },
-                { id: 2, name: 'Plain Dosa', price: 60, category: 'South Indian' },
-                { id: 3, name: 'Rava Dosa', price: 90, category: 'South Indian' },
-                { id: 4, name: 'Set Dosa', price: 70, category: 'South Indian' },
-                { id: 5, name: 'Idli Sambar (2 pcs)', price: 50, category: 'South Indian' },
-                { id: 6, name: 'Vada Sambar (2 pcs)', price: 60, category: 'South Indian' },
-                { id: 7, name: 'Idli Vada Combo', price: 65, category: 'South Indian' },
-                { id: 8, name: 'Upma', price: 45, category: 'South Indian' },
-                { id: 9, name: 'Poori Bhaji', price: 70, category: 'North Indian' },
-                { id: 10, name: 'Chapati (2 pcs)', price: 30, category: 'North Indian' },
-                { id: 11, name: 'Dal Rice', price: 85, category: 'North Indian' },
-                { id: 12, name: 'Sambar Rice', price: 75, category: 'South Indian' },
-                { id: 13, name: 'Curd Rice', price: 55, category: 'South Indian' },
-                { id: 14, name: 'Tea', price: 15, category: 'Beverages' },
-                { id: 15, name: 'Coffee', price: 20, category: 'Beverages' },
-                { id: 16, name: 'Lassi', price: 35, category: 'Beverages' },
-                { id: 17, name: 'Fresh Lime Water', price: 25, category: 'Beverages' },
-                { id: 18, name: 'Buttermilk', price: 20, category: 'Beverages' }
+                { id: 1, name: 'Masala Dosa', price: 80, category: 'South Indian', enabled: true },
+                { id: 2, name: 'Plain Dosa', price: 60, category: 'South Indian', enabled: true },
+                { id: 3, name: 'Rava Dosa', price: 90, category: 'South Indian', enabled: true },
+                { id: 4, name: 'Set Dosa', price: 70, category: 'South Indian', enabled: true },
+                { id: 5, name: 'Idli Sambar (2 pcs)', price: 50, category: 'South Indian', enabled: true },
+                { id: 6, name: 'Vada Sambar (2 pcs)', price: 60, category: 'South Indian', enabled: true },
+                { id: 7, name: 'Idli Vada Combo', price: 65, category: 'South Indian', enabled: true },
+                { id: 8, name: 'Upma', price: 45, category: 'South Indian', enabled: true },
+                { id: 9, name: 'Poori Bhaji', price: 70, category: 'North Indian', enabled: true },
+                { id: 10, name: 'Chapati (2 pcs)', price: 30, category: 'North Indian', enabled: true },
+                { id: 11, name: 'Dal Rice', price: 85, category: 'North Indian', enabled: true },
+                { id: 12, name: 'Sambar Rice', price: 75, category: 'South Indian', enabled: true },
+                { id: 13, name: 'Curd Rice', price: 55, category: 'South Indian', enabled: true },
+                { id: 14, name: 'Tea', price: 15, category: 'Beverages', enabled: true },
+                { id: 15, name: 'Coffee', price: 20, category: 'Beverages', enabled: true },
+                { id: 16, name: 'Lassi', price: 35, category: 'Beverages', enabled: true },
+                { id: 17, name: 'Fresh Lime Water', price: 25, category: 'Beverages', enabled: true },
+                { id: 18, name: 'Buttermilk', price: 20, category: 'Beverages', enabled: true }
             ];
         }
     }
@@ -102,6 +238,10 @@ class POSApp {
 
         document.getElementById('counter-service-btn').addEventListener('click', () => {
             this.showCounterSelector();
+        });
+
+        document.getElementById('view-earnings-btn').addEventListener('click', () => {
+            this.showEarningsScreen();
         });
 
         // Back buttons
@@ -121,9 +261,22 @@ class POSApp {
             }
         });
 
+        document.getElementById('back-to-service-from-earnings').addEventListener('click', () => {
+            this.showServiceSelector();
+        });
+
         // Print button
         document.getElementById('print-order').addEventListener('click', () => {
             this.printOrder();
+        });
+
+        // Earnings screen event listeners
+        document.getElementById('earnings-period').addEventListener('change', () => {
+            this.loadEarningsData();
+        });
+
+        document.getElementById('refresh-earnings').addEventListener('click', () => {
+            this.loadEarningsData();
         });
 
         // Search functionality
@@ -176,6 +329,14 @@ class POSApp {
                     break;
             }
         });
+
+        // MenuManager button
+        document.getElementById('manage-menu').addEventListener('click', () => {
+            this.openMenuManager();
+        });
+
+        // MenuManager modal event listeners
+        this.setupMenuManagerListeners();
     }
 
     setupSearchListeners() {
@@ -244,9 +405,9 @@ class POSApp {
             return;
         }
 
-        // Filter menu items based on query - only match item name
+        // Filter menu items based on query - only match enabled item names
         this.currentSearchResults = this.menuItems.filter(item => 
-            item.name.toLowerCase().includes(query.toLowerCase())
+            item.enabled !== false && item.name.toLowerCase().includes(query.toLowerCase())
         );
 
         this.selectedSearchIndex = -1; // Reset selection
@@ -388,6 +549,743 @@ class POSApp {
         }, 2000);
     }
 
+    // ===== MENU MANAGER FUNCTIONALITY =====
+    
+    setupMenuManagerListeners() {
+        // Close menu manager modal
+        document.getElementById('close-menu-manager').addEventListener('click', () => {
+            this.closeMenuManager();
+        });
+
+        // Close edit item modal
+        document.getElementById('close-edit-item').addEventListener('click', () => {
+            this.closeEditItemModal();
+        });
+
+        // Modal backdrop click to close
+        document.getElementById('menu-manager-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('menu-manager-modal')) {
+                this.closeMenuManager();
+            }
+        });
+
+        document.getElementById('edit-item-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('edit-item-modal')) {
+                this.closeEditItemModal();
+            }
+        });
+
+        // Add new item form
+        document.getElementById('add-item-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.addNewMenuItem();
+        });
+
+        // Clear form button
+        document.getElementById('clear-form').addEventListener('click', () => {
+            this.clearAddItemForm();
+        });
+
+        // Edit item form
+        document.getElementById('save-edit').addEventListener('click', () => {
+            this.saveEditedItem();
+        });
+
+        document.getElementById('cancel-edit').addEventListener('click', () => {
+            this.closeEditItemModal();
+        });
+
+        // Save menu changes
+        document.getElementById('save-menu-changes').addEventListener('click', () => {
+            this.saveMenuChanges();
+        });
+
+        // Filters and search
+        document.getElementById('filter-category').addEventListener('change', () => {
+            this.filterMenuItems();
+        });
+
+        document.getElementById('filter-status').addEventListener('change', () => {
+            this.filterMenuItems();
+        });
+
+        document.getElementById('search-items').addEventListener('input', (e) => {
+            this.searchMenuItems(e.target.value);
+        });
+
+        // Keyboard shortcuts for menu manager
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('menu-manager-modal').classList.contains('active')) {
+                if (e.key === 'Escape') {
+                    this.closeMenuManager();
+                }
+            }
+            if (document.getElementById('edit-item-modal').classList.contains('active')) {
+                if (e.key === 'Escape') {
+                    this.closeEditItemModal();
+                }
+            }
+        });
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchTab(e.target.dataset.tab);
+            });
+        });
+
+        // Settings form handlers
+        document.getElementById('save-restaurant-settings').addEventListener('click', () => {
+            this.saveRestaurantSettings();
+        });
+
+        document.getElementById('reset-restaurant-settings').addEventListener('click', () => {
+            this.resetRestaurantSettings();
+        });
+    }
+
+    openMenuManager() {
+        // Backup current menu for rollback if needed
+        this.menuBackup = JSON.parse(JSON.stringify(this.menuItems));
+        
+        // Populate categories
+        this.populateCategories();
+        
+        // Populate settings
+        this.populateSettings();
+        
+        // Show modal
+        document.getElementById('menu-manager-modal').classList.add('active');
+        
+        // Switch to menu items tab by default
+        this.switchTab('menu-items');
+        
+        // Load and display menu items
+        this.displayMenuItems();
+        
+        // Update stats
+        this.updateMenuStats();
+        
+        // Focus on first input
+        setTimeout(() => {
+            document.getElementById('item-name').focus();
+        }, 300);
+    }
+
+    closeMenuManager() {
+        document.getElementById('menu-manager-modal').classList.remove('active');
+        this.clearAddItemForm();
+        this.closeEditItemModal();
+    }
+
+    populateCategories() {
+        // Get unique categories from current menu
+        const categories = [...new Set(this.menuItems.map(item => item.category))].sort();
+        
+        // Populate add item form category dropdown
+        const addCategorySelect = document.getElementById('item-category');
+        addCategorySelect.innerHTML = '<option value="">Select Category</option>';
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            addCategorySelect.appendChild(option);
+        });
+
+        // Populate edit item form category dropdown
+        const editCategorySelect = document.getElementById('edit-item-category');
+        editCategorySelect.innerHTML = '';
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            editCategorySelect.appendChild(option);
+        });
+
+        // Populate filter dropdown
+        const filterCategorySelect = document.getElementById('filter-category');
+        filterCategorySelect.innerHTML = '<option value="all">All Categories</option>';
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            filterCategorySelect.appendChild(option);
+        });
+    }
+
+    displayMenuItems(filteredItems = null) {
+        const itemsToDisplay = filteredItems || this.menuItems;
+        const container = document.getElementById('menu-items-list');
+        
+        if (itemsToDisplay.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🍽️</div>
+                    <p>No menu items found</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = itemsToDisplay.map(item => `
+            <div class="menu-item-row ${item.enabled === false ? 'disabled' : ''}" data-item-id="${item.id}">
+                <div class="menu-item-name">${this.escapeHtml(item.name)}</div>
+                <div class="menu-item-price">₹${item.price.toFixed(2)}</div>
+                <div class="menu-item-category">${this.escapeHtml(item.category)}</div>
+                <div class="menu-item-status">
+                    <span class="${item.enabled !== false ? 'status-enabled' : 'status-disabled'}">
+                        ${item.enabled !== false ? '✅ Enabled' : '❌ Disabled'}
+                    </span>
+                </div>
+                <div class="menu-item-actions">
+                    <button class="action-btn edit" onclick="posApp.editMenuItem(${item.id})" title="Edit Item">
+                        ✏️ Edit
+                    </button>
+                    <button class="action-btn toggle" onclick="posApp.toggleMenuItem(${item.id})" title="${item.enabled !== false ? 'Disable' : 'Enable'} Item">
+                        ${item.enabled !== false ? '❌ Disable' : '✅ Enable'}
+                    </button>
+                    <button class="action-btn delete" onclick="posApp.deleteMenuItem(${item.id})" title="Delete Item">
+                        🗑️ Delete
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    filterMenuItems() {
+        const categoryFilter = document.getElementById('filter-category').value;
+        const statusFilter = document.getElementById('filter-status').value;
+        const searchQuery = document.getElementById('search-items').value.toLowerCase().trim();
+
+        let filteredItems = [...this.menuItems];
+
+        // Apply category filter
+        if (categoryFilter !== 'all') {
+            filteredItems = filteredItems.filter(item => item.category === categoryFilter);
+        }
+
+        // Apply status filter
+        if (statusFilter === 'enabled') {
+            filteredItems = filteredItems.filter(item => item.enabled !== false);
+        } else if (statusFilter === 'disabled') {
+            filteredItems = filteredItems.filter(item => item.enabled === false);
+        }
+
+        // Apply search filter
+        if (searchQuery) {
+            filteredItems = filteredItems.filter(item => 
+                item.name.toLowerCase().includes(searchQuery) ||
+                item.category.toLowerCase().includes(searchQuery)
+            );
+        }
+
+        this.displayMenuItems(filteredItems);
+        this.updateMenuStats(filteredItems);
+    }
+
+    searchMenuItems(query) {
+        // Debounce search to improve performance
+        clearTimeout(this.menuSearchTimeout);
+        this.menuSearchTimeout = setTimeout(() => {
+            this.filterMenuItems();
+        }, 300);
+    }
+
+    updateMenuStats(filteredItems = null) {
+        const items = filteredItems || this.menuItems;
+        const totalItems = items.length;
+        const enabledItems = items.filter(item => item.enabled !== false).length;
+        const disabledItems = totalItems - enabledItems;
+
+        document.getElementById('items-count').textContent = `${totalItems} items`;
+        document.getElementById('enabled-count').textContent = `${enabledItems} enabled`;
+        document.getElementById('disabled-count').textContent = `${disabledItems} disabled`;
+    }
+
+    addNewMenuItem() {
+        const form = document.getElementById('add-item-form');
+        const formData = new FormData(form);
+        
+        // Validate form
+        const validation = this.validateItemForm(formData);
+        if (!validation.valid) {
+            this.showFormErrors(validation.errors);
+            return;
+        }
+
+        // Create new menu item
+        const newItem = {
+            id: this.getNextMenuItemId(),
+            name: formData.get('name').trim(),
+            price: parseFloat(formData.get('price')),
+            category: formData.get('category'),
+            enabled: formData.get('enabled') === 'true'
+        };
+
+        // Add to menu items array
+        this.menuItems.push(newItem);
+        
+        // Clear form
+        this.clearAddItemForm();
+        
+        // Refresh display
+        this.populateCategories();
+        this.displayMenuItems();
+        this.updateMenuStats();
+        
+        // Show success message
+        this.showMessage(`✅ "${newItem.name}" added successfully!`, 'success');
+        
+        // Focus back on name field for quick adding
+        setTimeout(() => {
+            document.getElementById('item-name').focus();
+        }, 100);
+    }
+
+    validateItemForm(formData, isEdit = false) {
+        const errors = {};
+        let valid = true;
+
+        // Validate name
+        const name = formData.get('name')?.trim();
+        if (!name) {
+            errors.name = 'Item name is required';
+            valid = false;
+        } else if (name.length > 50) {
+            errors.name = 'Item name must be 50 characters or less';
+            valid = false;
+        } else {
+            // Check for duplicate names (excluding current item in edit mode)
+            const itemId = isEdit ? parseInt(formData.get('id')) : null;
+            const duplicateExists = this.menuItems.some(item => 
+                item.name.toLowerCase() === name.toLowerCase() && 
+                item.id !== itemId
+            );
+            if (duplicateExists) {
+                errors.name = 'An item with this name already exists';
+                valid = false;
+            }
+        }
+
+        // Validate price
+        const price = parseFloat(formData.get('price'));
+        if (!price || price <= 0) {
+            errors.price = 'Price must be a positive number';
+            valid = false;
+        } else if (price > 9999) {
+            errors.price = 'Price cannot exceed ₹9999';
+            valid = false;
+        }
+
+        // Validate category
+        const category = formData.get('category')?.trim();
+        if (!category) {
+            errors.category = 'Please select a category';
+            valid = false;
+        }
+
+        return { valid, errors };
+    }
+
+    showFormErrors(errors) {
+        // Clear previous errors
+        document.querySelectorAll('.form-group input, .form-group select').forEach(field => {
+            field.classList.remove('error');
+        });
+
+        // Show new errors
+        Object.keys(errors).forEach(fieldName => {
+            const field = document.querySelector(`[name="${fieldName}"]`);
+            if (field) {
+                field.classList.add('error');
+                field.title = errors[fieldName];
+            }
+        });
+
+        // Show error message
+        const errorMessages = Object.values(errors).join(', ');
+        this.showMessage(`❌ ${errorMessages}`, 'error');
+    }
+
+    clearAddItemForm() {
+        const form = document.getElementById('add-item-form');
+        form.reset();
+        
+        // Remove error styling
+        document.querySelectorAll('.form-group input, .form-group select').forEach(field => {
+            field.classList.remove('error');
+            field.removeAttribute('title');
+        });
+
+        // Set default values
+        document.getElementById('item-enabled').value = 'true';
+    }
+
+    getNextMenuItemId() {
+        const maxId = Math.max(...this.menuItems.map(item => item.id), 0);
+        return maxId + 1;
+    }
+
+    editMenuItem(itemId) {
+        const item = this.menuItems.find(item => item.id === itemId);
+        if (!item) {
+            this.showMessage('❌ Item not found', 'error');
+            return;
+        }
+
+        // Populate edit form
+        document.getElementById('edit-item-id').value = item.id;
+        document.getElementById('edit-item-name').value = item.name;
+        document.getElementById('edit-item-price').value = item.price;
+        document.getElementById('edit-item-category').value = item.category;
+        document.getElementById('edit-item-enabled').value = item.enabled !== false ? 'true' : 'false';
+
+        // Show edit modal
+        document.getElementById('edit-item-modal').classList.add('active');
+        
+        // Focus on name field
+        setTimeout(() => {
+            document.getElementById('edit-item-name').focus();
+        }, 300);
+    }
+
+    saveEditedItem() {
+        const form = document.getElementById('edit-item-form');
+        const formData = new FormData(form);
+        
+        // Validate form
+        const validation = this.validateItemForm(formData, true);
+        if (!validation.valid) {
+            this.showFormErrors(validation.errors);
+            return;
+        }
+
+        const itemId = parseInt(formData.get('id'));
+        const itemIndex = this.menuItems.findIndex(item => item.id === itemId);
+        
+        if (itemIndex === -1) {
+            this.showMessage('❌ Item not found', 'error');
+            return;
+        }
+
+        // Update menu item
+        this.menuItems[itemIndex] = {
+            ...this.menuItems[itemIndex],
+            name: formData.get('name').trim(),
+            price: parseFloat(formData.get('price')),
+            category: formData.get('category'),
+            enabled: formData.get('enabled') === 'true'
+        };
+
+        // Close edit modal
+        this.closeEditItemModal();
+        
+        // Refresh display
+        this.populateCategories();
+        this.displayMenuItems();
+        this.updateMenuStats();
+        
+        // Show success message
+        this.showMessage(`✅ "${this.menuItems[itemIndex].name}" updated successfully!`, 'success');
+    }
+
+    closeEditItemModal() {
+        document.getElementById('edit-item-modal').classList.remove('active');
+        
+        // Clear form and errors
+        const form = document.getElementById('edit-item-form');
+        form.reset();
+        document.querySelectorAll('#edit-item-form .form-group input, #edit-item-form .form-group select').forEach(field => {
+            field.classList.remove('error');
+            field.removeAttribute('title');
+        });
+    }
+
+    toggleMenuItem(itemId) {
+        const itemIndex = this.menuItems.findIndex(item => item.id === itemId);
+        if (itemIndex === -1) {
+            this.showMessage('❌ Item not found', 'error');
+            return;
+        }
+
+        const item = this.menuItems[itemIndex];
+        const newStatus = item.enabled === false;
+        
+        // Confirm action
+        const action = newStatus ? 'enable' : 'disable';
+        if (!confirm(`Are you sure you want to ${action} "${item.name}"?`)) {
+            return;
+        }
+
+        // Update status
+        this.menuItems[itemIndex].enabled = newStatus;
+        
+        // Refresh display
+        this.displayMenuItems();
+        this.updateMenuStats();
+        
+        // Show success message
+        const statusText = newStatus ? 'enabled' : 'disabled';
+        this.showMessage(`✅ "${item.name}" ${statusText} successfully!`, 'success');
+    }
+
+    deleteMenuItem(itemId) {
+        const itemIndex = this.menuItems.findIndex(item => item.id === itemId);
+        if (itemIndex === -1) {
+            this.showMessage('❌ Item not found', 'error');
+            return;
+        }
+
+        const item = this.menuItems[itemIndex];
+        
+        // Confirm deletion
+        if (!confirm(`⚠️ Are you sure you want to permanently delete "${item.name}"?\n\nThis action cannot be undone.`)) {
+            return;
+        }
+
+        // Remove item
+        this.menuItems.splice(itemIndex, 1);
+        
+        // Refresh display
+        this.populateCategories();
+        this.displayMenuItems();
+        this.updateMenuStats();
+        
+        // Show success message
+        this.showMessage(`✅ "${item.name}" deleted successfully!`, 'success');
+    }
+
+    async saveMenuChanges() {
+        try {
+            // Show saving indicator
+            const saveButton = document.getElementById('save-menu-changes');
+            const originalText = saveButton.textContent;
+            saveButton.textContent = '💾 Saving...';
+            saveButton.disabled = true;
+
+            // Prepare menu data for saving
+            const menuData = {
+                restaurant: this.settings.restaurant,
+                items: this.menuItems.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    category: item.category,
+                    enabled: item.enabled !== false // Default to true if not set
+                }))
+            };
+
+            // Save to file
+            const fs = require('fs');
+            const menuPath = await dataPathManager.getMenuPath();
+            
+            fs.writeFileSync(menuPath, JSON.stringify(menuData, null, 2), 'utf8');
+            
+            // Update the main menu display if we're on billing screen
+            if (document.getElementById('billing-screen').classList.contains('active')) {
+                this.renderMenu();
+            }
+            
+            // Success feedback
+            saveButton.textContent = '✅ Saved!';
+            this.showMessage('✅ Menu changes saved successfully!', 'success');
+            
+            // Reset button after delay
+            setTimeout(() => {
+                saveButton.textContent = originalText;
+                saveButton.disabled = false;
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Error saving menu changes:', error);
+            
+            // Error feedback
+            const saveButton = document.getElementById('save-menu-changes');
+            saveButton.textContent = '❌ Save Failed';
+            saveButton.disabled = false;
+            
+            this.showMessage('❌ Failed to save menu changes. Please try again.', 'error');
+            
+            // Reset button after delay
+            setTimeout(() => {
+                saveButton.textContent = '💾 Save Changes';
+            }, 3000);
+        }
+    }
+
+    showMessage(message, type = 'info') {
+        // Create message element
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `menu-message menu-message-${type}`;
+        messageDiv.textContent = message;
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            z-index: 10001;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            animation: slideInRight 0.3s ease;
+            max-width: 300px;
+            word-wrap: break-word;
+        `;
+
+        // Apply type-specific styling
+        switch (type) {
+            case 'success':
+                messageDiv.style.background = '#10b981';
+                messageDiv.style.color = 'white';
+                break;
+            case 'error':
+                messageDiv.style.background = '#ef4444';
+                messageDiv.style.color = 'white';
+                break;
+            default:
+                messageDiv.style.background = '#3b82f6';
+                messageDiv.style.color = 'white';
+        }
+        
+        document.body.appendChild(messageDiv);
+        
+        // Remove message after delay
+        setTimeout(() => {
+            messageDiv.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // ===== TABS AND SETTINGS FUNCTIONALITY =====
+
+    switchTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+    }
+
+    populateSettings() {
+        // Populate restaurant settings
+        document.getElementById('restaurant-name').value = this.settings.restaurant.name || '';
+        document.getElementById('restaurant-contact').value = this.settings.restaurant.contact || '';
+        document.getElementById('restaurant-address').value = this.settings.restaurant.address || '';
+        document.getElementById('restaurant-gstin').value = this.settings.restaurant.gstin || '';
+        document.getElementById('restaurant-fssai').value = this.settings.restaurant.fssai || '';
+    }
+
+    saveRestaurantSettings() {
+        // Get form values
+        const name = document.getElementById('restaurant-name').value.trim();
+        const contact = document.getElementById('restaurant-contact').value.trim();
+        const address = document.getElementById('restaurant-address').value.trim();
+        const gstin = document.getElementById('restaurant-gstin').value.trim();
+        const fssai = document.getElementById('restaurant-fssai').value.trim();
+
+        // Validate required fields
+        if (!name) {
+            this.showMessage('❌ Restaurant name is required', 'error');
+            document.getElementById('restaurant-name').focus();
+            return;
+        }
+
+        // Update settings
+        this.settings.restaurant = {
+            name,
+            contact,
+            address,
+            gstin,
+            fssai
+        };
+
+        // Save to file
+        this.saveSettingsToFile();
+        
+        this.showMessage('✅ Restaurant information saved successfully!', 'success');
+    }
+
+    resetRestaurantSettings() {
+        const defaults = {
+            name: "UDUPI KRISHNAM VEG",
+            contact: "+91 12345 67890",
+            address: "Bengaluru - Chennai Hwy, Konnappana Agrahara, Electronic City, Bengaluru, Karnataka - 560100",
+            gstin: "A unit of Salt and Pepper",
+            fssai: "12345678901234"
+        };
+
+        this.settings.restaurant = { ...defaults };
+        this.populateSettings();
+        this.showMessage('🔄 Restaurant information reset to defaults', 'success');
+    }
+
+    async saveSettingsToFile() {
+        try {
+            // Prepare menu data with settings
+            const menuData = {
+                restaurant: this.settings.restaurant,
+                items: this.menuItems.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    category: item.category,
+                    enabled: item.enabled !== false
+                }))
+            };
+
+            // Save to file
+            const fs = require('fs');
+            const menuPath = await dataPathManager.getMenuPath();
+            
+            fs.writeFileSync(menuPath, JSON.stringify(menuData, null, 2), 'utf8');
+            
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            this.showMessage('❌ Failed to save settings. Please try again.', 'error');
+        }
+    }
+
+    // ===== PARCEL CHARGE FUNCTIONALITY =====
+
+    updateSelectiveParcelChargeDisplay() {
+        const parcelItemsCount = this.getParcelItemsCount();
+        const totalParcelCharges = this.getTotalParcelCharges();
+        
+        // Update the parcel charge display area
+        const parcelChargeElement = document.getElementById('parcel-charge-amount');
+        const parcelSummaryLine = document.getElementById('parcel-summary-line');
+        
+        if (parcelChargeElement && parcelSummaryLine) {
+            if (parcelItemsCount > 0) {
+                parcelChargeElement.textContent = `+₹${totalParcelCharges.toFixed(2)} (${parcelItemsCount} items)`;
+                parcelSummaryLine.style.display = 'flex';
+            } else {
+                parcelChargeElement.textContent = '';
+                parcelSummaryLine.style.display = 'none';
+            }
+        }
+    }
+
+    // ===== END TABS AND SETTINGS FUNCTIONALITY =====
+
+    // ===== END MENU MANAGER FUNCTIONALITY =====
+
     updateDateTime() {
         const now = new Date();
         const dateOptions = { year: 'numeric', month: 'short', day: '2-digit' };
@@ -416,6 +1314,7 @@ class POSApp {
         document.getElementById('table-selector-screen').classList.remove('active');
         document.getElementById('counter-selector-screen').classList.remove('active');
         document.getElementById('billing-screen').classList.remove('active');
+        document.getElementById('earnings-screen').classList.remove('active');
         this.resetCurrentState();
     }
 
@@ -424,6 +1323,7 @@ class POSApp {
         document.getElementById('table-selector-screen').classList.add('active');
         document.getElementById('counter-selector-screen').classList.remove('active');
         document.getElementById('billing-screen').classList.remove('active');
+        document.getElementById('earnings-screen').classList.remove('active');
         this.resetCurrentState();
         this.renderTables();
     }
@@ -433,8 +1333,19 @@ class POSApp {
         document.getElementById('table-selector-screen').classList.remove('active');
         document.getElementById('counter-selector-screen').classList.add('active');
         document.getElementById('billing-screen').classList.remove('active');
+        document.getElementById('earnings-screen').classList.remove('active');
         this.resetCurrentState();
         this.renderCounters();
+    }
+
+    showEarningsScreen() {
+        document.getElementById('service-selector-screen').classList.remove('active');
+        document.getElementById('table-selector-screen').classList.remove('active');
+        document.getElementById('counter-selector-screen').classList.remove('active');
+        document.getElementById('billing-screen').classList.remove('active');
+        document.getElementById('earnings-screen').classList.add('active');
+        this.resetCurrentState();
+        this.loadEarningsData();
     }
 
     resetCurrentState() {
@@ -449,6 +1360,7 @@ class POSApp {
         document.getElementById('table-selector-screen').classList.remove('active');
         document.getElementById('counter-selector-screen').classList.remove('active');
         document.getElementById('billing-screen').classList.add('active');
+        document.getElementById('earnings-screen').classList.remove('active');
         
         // Update header based on billing mode
         if (this.billingMode === 'table') {
@@ -589,7 +1501,10 @@ class POSApp {
         const menuGrid = document.getElementById('menu-grid');
         menuGrid.innerHTML = '';
 
-        this.menuItems.forEach(item => {
+        // Filter to show only enabled items
+        const enabledItems = this.menuItems.filter(item => item.enabled !== false);
+
+        enabledItems.forEach(item => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'menu-item';
             
@@ -608,6 +1523,17 @@ class POSApp {
             itemDiv.addEventListener('click', () => this.addItemToOrder(item));
             menuGrid.appendChild(itemDiv);
         });
+
+        // Show message if no enabled items
+        if (enabledItems.length === 0) {
+            menuGrid.innerHTML = `
+                <div class="no-items" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #6c757d;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">🍽️</div>
+                    <p>No menu items available</p>
+                    <p style="font-size: 14px; margin-top: 10px;">Use Menu Manager to add items</p>
+                </div>
+            `;
+        }
     }
 
     addItemToOrder(item) {
@@ -619,12 +1545,19 @@ class POSApp {
         if (existingItem) {
             existingItem.quantity += 1;
         } else {
-            this.currentOrder.push({ 
+            const newOrderItem = { 
                 ...item, 
                 price: finalPrice, // Store the final price (with discount if applicable)
                 originalPrice: item.price, // Keep original price for reference
-                quantity: 1 
-            });
+                quantity: 1,
+                parcelCharge: 0, // Individual parcel charge (0, 5, or 10)
+                parcelType: null // null, '5', or '10'
+            };
+            
+            // Debug: Check if kotGroup is preserved
+            console.log(`➕ Adding item to order: ${item.name}, kotGroup: ${item.kotGroup} -> ${newOrderItem.kotGroup}`);
+            
+            this.currentOrder.push(newOrderItem);
         }
 
         // Mark location as active
@@ -652,17 +1585,35 @@ class POSApp {
 
         this.currentOrder.forEach(item => {
             const itemDiv = document.createElement('div');
-            itemDiv.className = 'order-item';
+            itemDiv.className = `order-item ${item.parcelType ? 'has-parcel' : ''}`;
+            
+            const itemBaseTotal = item.price * item.quantity;
+            const itemParcelTotal = item.parcelCharge * item.quantity;
+            const itemTotalWithParcel = itemBaseTotal + itemParcelTotal;
             
             itemDiv.innerHTML = `
-                <div class="order-item-name">${item.name}</div>
-                <div class="order-item-controls">
-                    <button class="qty-btn minus" onclick="posApp.updateItemQuantity(${item.id}, ${item.quantity - 1})">-</button>
-                    <span class="quantity">${item.quantity}</span>
-                    <button class="qty-btn plus" onclick="posApp.updateItemQuantity(${item.id}, ${item.quantity + 1})">+</button>
+                <div class="order-item-main">
+                    <div class="order-item-info">
+                        <div class="order-item-name">
+                            ${item.name}
+                            ${item.parcelType ? `<span class="parcel-label">Parcel ₹${item.parcelCharge}</span>` : ''}
+                        </div>
+                        <div class="order-item-price-info">
+                            <div class="base-price">₹${item.price.toFixed(2)} × ${item.quantity} = ₹${itemBaseTotal.toFixed(2)}</div>
+                            ${item.parcelType ? `<div class="parcel-charge">Parcel: ₹${item.parcelCharge.toFixed(2)} × ${item.quantity} = ₹${itemParcelTotal.toFixed(2)}</div>` : ''}
+                            <div class="total-price">Total: ₹${itemTotalWithParcel.toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <div class="order-item-controls">
+                        <button class="qty-btn minus" onclick="posApp.updateItemQuantity(${item.id}, ${item.quantity - 1})">-</button>
+                        <span class="quantity">${item.quantity}</span>
+                        <button class="qty-btn plus" onclick="posApp.updateItemQuantity(${item.id}, ${item.quantity + 1})">+</button>
+                        <button class="parcel-btn" onclick="posApp.showParcelPopup(${item.id})" title="Set parcel charge">
+                            📦
+                        </button>
+                        <button class="remove-btn" onclick="posApp.removeItemFromOrder(${item.id})" title="Remove item">×</button>
+                    </div>
                 </div>
-                <div class="order-item-price">₹${(item.price * item.quantity).toFixed(2)}</div>
-                <button class="remove-btn" onclick="posApp.removeItemFromOrder(${item.id})">×</button>
             `;
 
             orderItemsContainer.appendChild(itemDiv);
@@ -703,13 +1654,335 @@ class POSApp {
         }
     }
 
+    // ===== PER-ITEM PARCEL CHARGE FUNCTIONALITY =====
+
+    showParcelPopup(itemId) {
+        const item = this.currentOrder.find(orderItem => orderItem.id === itemId);
+        if (!item) return;
+
+        // Remove any existing popup
+        this.hideParcelPopup();
+
+        // Create popup
+        const popup = document.createElement('div');
+        popup.id = 'parcel-popup';
+        popup.className = 'parcel-popup';
+        popup.innerHTML = `
+            <div class="parcel-popup-content">
+                <div class="parcel-popup-header">
+                    <h3>Parcel Charge for ${item.name}</h3>
+                    <button class="close-popup" onclick="posApp.hideParcelPopup()">×</button>
+                </div>
+                <div class="parcel-popup-options">
+                    <button class="parcel-option ${item.parcelType === '5' ? 'selected' : ''}" 
+                            onclick="posApp.setItemParcel(${item.id}, 5, '5')">
+                        Apply ₹5 Parcel
+                    </button>
+                    <button class="parcel-option ${item.parcelType === '10' ? 'selected' : ''}" 
+                            onclick="posApp.setItemParcel(${item.id}, 10, '10')">
+                        Apply ₹10 Parcel
+                    </button>
+                    <button class="parcel-option remove ${!item.parcelType ? 'selected' : ''}" 
+                            onclick="posApp.setItemParcel(${item.id}, 0, null)">
+                        Remove Parcel
+                    </button>
+                </div>
+            </div>
+            <div class="parcel-popup-backdrop" onclick="posApp.hideParcelPopup()"></div>
+        `;
+
+        document.body.appendChild(popup);
+        
+        // Add CSS for popup if not already present
+        this.addParcelPopupStyles();
+    }
+
+    hideParcelPopup() {
+        const popup = document.getElementById('parcel-popup');
+        if (popup) {
+            popup.remove();
+        }
+    }
+
+    setItemParcel(itemId, parcelCharge, parcelType) {
+        const item = this.currentOrder.find(orderItem => orderItem.id === itemId);
+        if (!item) return;
+
+        item.parcelCharge = parcelCharge;
+        item.parcelType = parcelType;
+
+        this.hideParcelPopup();
+        this.saveCurrentOrder();
+        this.renderOrder();
+        this.updateTotals();
+    }
+
+    addParcelPopupStyles() {
+        // Check if styles already exist
+        if (document.getElementById('parcel-popup-styles')) return;
+
+        const style = document.createElement('style');
+        style.id = 'parcel-popup-styles';
+        style.textContent = `
+            .parcel-popup {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .parcel-popup-backdrop {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+            }
+
+            .parcel-popup-content {
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                position: relative;
+                z-index: 1;
+                min-width: 300px;
+                max-width: 400px;
+            }
+
+            .parcel-popup-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 20px 20px 10px;
+                border-bottom: 1px solid #eee;
+            }
+
+            .parcel-popup-header h3 {
+                margin: 0;
+                font-size: 16px;
+                color: #333;
+            }
+
+            .close-popup {
+                background: none;
+                border: none;
+                font-size: 24px;
+                cursor: pointer;
+                color: #666;
+                padding: 0;
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .close-popup:hover {
+                color: #333;
+                background: #f5f5f5;
+                border-radius: 50%;
+            }
+
+            .parcel-popup-options {
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .parcel-option {
+                padding: 15px 20px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                background: white;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                text-align: center;
+            }
+
+            .parcel-option:hover {
+                border-color: #007bff;
+                background: #f8f9ff;
+                transform: translateY(-1px);
+            }
+
+            .parcel-option.selected {
+                border-color: #007bff;
+                background: #007bff;
+                color: white;
+            }
+
+            .parcel-option.remove {
+                border-color: #dc3545;
+                color: #dc3545;
+            }
+
+            .parcel-option.remove:hover {
+                border-color: #dc3545;
+                background: #fff5f5;
+            }
+
+            .parcel-option.remove.selected {
+                background: #dc3545;
+                color: white;
+            }
+
+            .order-item {
+                margin-bottom: 10px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 15px;
+                background: white;
+            }
+
+            .order-item.has-parcel {
+                border-left: 4px solid #28a745;
+            }
+
+            .order-item-main {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+
+            .order-item-info {
+                flex: 1;
+            }
+
+            .order-item-name {
+                font-weight: 600;
+                margin-bottom: 5px;
+            }
+
+            .parcel-label {
+                display: inline-block;
+                background: #28a745;
+                color: white;
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 11px;
+                margin-left: 8px;
+            }
+
+            .order-item-price-info {
+                font-size: 13px;
+                color: #666;
+            }
+
+            .base-price, .parcel-charge {
+                margin-bottom: 2px;
+            }
+
+            .total-price {
+                font-weight: 600;
+                color: #333;
+                margin-top: 5px;
+            }
+
+            .order-item-controls {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .qty-btn {
+                width: 30px;
+                height: 30px;
+                border: 1px solid #ddd;
+                background: white;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+            }
+
+            .qty-btn:hover {
+                background: #f5f5f5;
+            }
+
+            .quantity {
+                min-width: 20px;
+                text-align: center;
+                font-weight: 600;
+            }
+
+            .parcel-btn {
+                width: 35px;
+                height: 35px;
+                border: 1px solid #ddd;
+                background: white;
+                border-radius: 6px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+            }
+
+            .parcel-btn:hover {
+                background: #f8f9ff;
+                border-color: #007bff;
+            }
+
+            .remove-btn {
+                width: 30px;
+                height: 30px;
+                border: 1px solid #dc3545;
+                background: white;
+                color: #dc3545;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+                font-size: 18px;
+            }
+
+            .remove-btn:hover {
+                background: #dc3545;
+                color: white;
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
+
+    // ===== SELECTIVE PARCEL CHARGE FUNCTIONALITY =====
+
+    getParcelItemsCount() {
+        return this.currentOrder.filter(item => item.parcelCharge > 0).length;
+    }
+
+    getTotalParcelCharges() {
+        return this.currentOrder.reduce((total, item) => {
+            return total + (item.parcelCharge || 0) * item.quantity;
+        }, 0);
+    }
+
+    // ===== END SELECTIVE PARCEL CHARGE FUNCTIONALITY =====
+
     updateTotals() {
         const subtotal = this.getSubtotal();
+        const parcelCharges = this.getTotalParcelCharges();
         const total = this.getTotal();
 
         document.getElementById('subtotal').textContent = `₹${subtotal.toFixed(2)}`;
         document.getElementById('tax').textContent = `₹0.00`;
         document.getElementById('total').textContent = `₹${total.toFixed(2)}`;
+        
+        // Update parcel charge display to show selective charges
+        this.updateSelectiveParcelChargeDisplay();
     }
 
     getSubtotal() {
@@ -721,7 +1994,7 @@ class POSApp {
     }
 
     getTotal() {
-        return this.getSubtotal(); // Total equals subtotal (no tax)
+        return this.getSubtotal() + this.getTotalParcelCharges(); // Total includes selective parcel charges
     }
 
     loadCurrentOrder() {
@@ -731,6 +2004,18 @@ class POSApp {
                 `counter_${this.currentLocation}_order`;
             const savedOrder = localStorage.getItem(storageKey);
             this.currentOrder = savedOrder ? JSON.parse(savedOrder) : [];
+            
+            // Ensure backward compatibility - migrate from isParcel to parcelCharge system
+            this.currentOrder = this.currentOrder.map(item => ({
+                ...item,
+                // Migrate old isParcel system to new parcelCharge system
+                parcelCharge: item.parcelCharge !== undefined ? item.parcelCharge : 
+                             (item.isParcel ? 10 : 0), // Default ₹10 for existing parcel items
+                parcelType: item.parcelType !== undefined ? item.parcelType : 
+                           (item.isParcel ? '10' : null),
+                // Remove old isParcel field
+                isParcel: undefined
+            }));
         } catch (error) {
             console.error('Error loading current order:', error);
             this.currentOrder = [];
@@ -837,6 +2122,9 @@ class POSApp {
             
             console.log('Order printed successfully (Auto-Silent Mode)');
             
+            // Save completed order for earnings tracking
+            this.saveCompletedOrder();
+            
             // Clear order after successful print
             this.currentOrder = [];
             
@@ -860,18 +2148,60 @@ class POSApp {
             printButton.textContent = '🖨 Print';
             printButton.disabled = false;
             
-            // Show user-friendly error message
+            // Enhanced error message handling
             const errorMsg = error.message || 'Print operation failed';
             
-            if (errorMsg.includes('No printer found')) {
-                alert('❌ No printer found. Please check connection.\n\nTroubleshooting:\n• Check printer power and USB/network connection\n• Verify printer drivers are installed\n• Make sure printer paper is loaded\n• Try restarting the printer\n\nWould you like to use print preview instead?');
+            if (errorMsg.includes('No printer found') || 
+                errorMsg.includes('No printer detected') || 
+                errorMsg.includes('not available')) {
                 
-                const usePreview = confirm('Use print preview mode instead of silent printing?');
-                if (usePreview) {
-                    this.printOrderWithPreview();
+                // Show friendly message and automatically use preview mode
+                console.log('🖨️ No printer detected - automatically using print preview mode');
+                
+                printButton.textContent = '🖨 Using Preview Mode...';
+                
+                try {
+                    await this.printOrderWithPreview();
+                    
+                    // Success feedback
+                    printButton.textContent = '✅ Printed via Preview!';
+                    setTimeout(() => {
+                        const printButton = document.getElementById('print-order');
+                        printButton.textContent = '🖨 Print';
+                        printButton.disabled = false;
+                    }, 2000);
+                    
+                    // Save completed order for earnings tracking
+                    this.saveCompletedOrder();
+                    
+                    // Clear order after successful print
+                    this.currentOrder = [];
+                    
+                    if (this.billingMode === 'table') {
+                        this.activeTables.delete(this.currentTable);
+                        this.saveActiveTableData();
+                    } else {
+                        this.activeCounters.delete(this.currentCounter);
+                        this.saveActiveCounterData();
+                    }
+                    
+                    this.saveCurrentOrder();
+                    this.renderOrder();
+                    this.updateTotals();
+                    
+                } catch (previewError) {
+                    console.error('Preview printing also failed:', previewError);
+                    alert('❌ Unable to print.\n\nBoth direct printing and preview mode failed.\nPlease check your system and try again.');
+                    
+                    printButton.textContent = '🖨 Print';
+                    printButton.disabled = false;
                 }
+            } else if (errorMsg.includes('timed out')) {
+                alert(`⏱️ Print Timeout\n\nThe print operation took too long.\nYour printer may be busy or offline.\n\nPlease check your printer and try again.`);
+            } else if (errorMsg.includes('Print failed')) {
+                alert(`❌ Print Job Failed\n\nThe printer rejected the print job.\nPlease check:\n• Paper loaded correctly\n• Printer is ready\n• No error lights\n\nThen try again.`);
             } else {
-                alert(`❌ Print failed: ${errorMsg}\n\nPlease check your printer connection and try again.`);
+                alert(`❌ Print Error\n\n${errorMsg}\n\nPlease check your printer connection and try again.`);
             }
         }
     }
@@ -936,52 +2266,83 @@ class POSApp {
         }
     }
 
-    // New auto-silent print method for one-click printing
+    // Enhanced auto-silent print method with retry logic and better error handling
     async printOrderAutoSilent() {
-        try {
-            // Generate print content with enhanced fonts
-            const kotContent = this.generateKOTContent();
-            const billContent = this.generateBillContent();
-            
-            // Print KOT using auto-silent method
-            console.log('Auto-printing KOT...');
-            const kotResult = await ipcRenderer.invoke('auto-silent-print', kotContent, 'KOT');
-            if (!kotResult.success) {
-                throw new Error(`KOT print failed: ${kotResult.error}`);
+        const maxRetries = 2;
+        let attempt = 0;
+        
+        while (attempt <= maxRetries) {
+            try {
+                attempt++;
+                console.log(`Print attempt ${attempt}/${maxRetries + 1}`);
+                
+                // Generate bill content with enhanced fonts
+                const billContent = this.generateBillContent();
+                
+                // Print dual KOTs using auto-silent method
+                console.log('Auto-printing KOTs...');
+                console.log('🚨 KOT DEBUG: Method called, about to check items');
+                console.log('🚨 CRITICAL: About to call autoSilentPrintKOTs method...');
+                console.log('🚨 CRITICAL: this.autoSilentPrintKOTs type:', typeof this.autoSilentPrintKOTs);
+                
+                try {
+                    const kotResult = await this.autoSilentPrintKOTs();
+                    console.log('KOT print result:', kotResult);
+                } catch (kotError) {
+                    console.error('🚨 CRITICAL: KOT method failed with error:', kotError);
+                    console.error('🚨 CRITICAL: KOT error stack:', kotError.stack);
+                }
+                
+                // Continue with bill printing regardless of KOT result (KOTs handle their own fallbacks)
+                // SPEED OPTIMIZATION: Reduced delay between prints for instant printing
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                // Print Bill using auto-silent method
+                console.log('Auto-printing Bill...');
+                const billResult = await ipcRenderer.invoke('auto-silent-print', billContent, 'Bill');
+                
+                // Check if we should fallback to preview mode for bill
+                if (!billResult.success && billResult.fallbackToPreview) {
+                    console.log('🖨️ No printer available - using preview mode for Bill');
+                    await this.printCustomerBill(); // Use preview mode
+                    console.log('✅ Bill printed successfully using preview mode');
+                    return; // Success via preview mode
+                }
+                
+                if (!billResult.success) {
+                    throw new Error(`Bill print failed: ${billResult.error}`);
+                }
+                
+                console.log('✅ Bill printed successfully to:', billResult.printer);
+                console.log('✅ Order printed successfully - both KOT and Bill');
+                return; // Success - exit retry loop
+                
+            } catch (error) {
+                console.error(`Print attempt ${attempt} failed:`, error.message);
+                
+                // If this was the last attempt, throw the error
+                if (attempt > maxRetries) {
+                    console.error('All print attempts failed:', error);
+                    throw error;
+                }
+                
+                // Wait before retrying (exponential backoff)
+                const retryDelay = Math.min(2000 * attempt, 5000); // Max 5 second delay
+                console.log(`Retrying in ${retryDelay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
             }
-            console.log('✅ KOT printed successfully to:', kotResult.printer);
-
-            // Small delay between prints to avoid conflicts
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Print Bill using auto-silent method
-            console.log('Auto-printing Bill...');
-            const billResult = await ipcRenderer.invoke('auto-silent-print', billContent, 'Bill');
-            if (!billResult.success) {
-                throw new Error(`Bill print failed: ${billResult.error}`);
-            }
-            console.log('✅ Bill printed successfully to:', billResult.printer);
-            
-        } catch (error) {
-            console.error('Auto-silent printing error:', error);
-            throw error; // Re-throw to be handled by printOrder
         }
     }
 
     // Enhanced silent print method with improved error handling
     async printOrderEnhanced() {
         try {
-            // Generate print content
-            const kotContent = this.generateKOTContent();
+            // Generate bill content
             const billContent = this.generateBillContent();
             
-            // Print KOT using enhanced method
-            console.log('Printing KOT...');
-            const kotResult = await ipcRenderer.invoke('enhanced-silent-print', kotContent, 'KOT');
-            if (!kotResult.success) {
-                throw new Error(`KOT print failed: ${kotResult.error}`);
-            }
-            console.log('KOT printed successfully to:', kotResult.printer);
+            // Print dual KOTs using enhanced method
+            console.log('Printing dual KOTs...');
+            await this.enhancedSilentPrintKOTs();
 
             // Small delay between prints to avoid printer conflicts
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -997,6 +2358,39 @@ class POSApp {
         } catch (error) {
             console.error('Enhanced printing error:', error);
             throw error; // Re-throw to be handled by printOrder
+        }
+    }
+
+    async enhancedSilentPrintKOTs() {
+        // Split items by kotGroup
+        const kitchenItems = this.currentOrder.filter(item => {
+            const menuItem = this.menuItems.find(mi => mi.id === item.id);
+            return menuItem && menuItem.kotGroup === 'kitchen';
+        });
+        
+        const drinksItems = this.currentOrder.filter(item => {
+            const menuItem = this.menuItems.find(mi => mi.id === item.id);
+            return menuItem && menuItem.kotGroup === 'drinks';
+        });
+
+        // Print Kitchen KOT if items exist
+        if (kitchenItems.length > 0) {
+            const kitchenKotContent = this.generateKOTContent(kitchenItems, 'KITCHEN KOT');
+            const kotResult = await ipcRenderer.invoke('enhanced-silent-print', kitchenKotContent, 'Kitchen KOT');
+            if (!kotResult.success) {
+                throw new Error(`Kitchen KOT print failed: ${kotResult.error}`);
+            }
+            console.log('Kitchen KOT printed successfully to:', kotResult.printer);
+        }
+        
+        // Print Drinks KOT if items exist  
+        if (drinksItems.length > 0) {
+            const drinksKotContent = this.generateKOTContent(drinksItems, 'DRINKS KOT');
+            const kotResult = await ipcRenderer.invoke('enhanced-silent-print', drinksKotContent, 'Drinks KOT');
+            if (!kotResult.success) {
+                throw new Error(`Drinks KOT print failed: ${kotResult.error}`);
+            }
+            console.log('Drinks KOT printed successfully to:', kotResult.printer);
         }
     }
 
@@ -1248,6 +2642,9 @@ class POSApp {
             
             console.log('Order printed successfully (Preview Mode)');
             
+            // Save completed order for earnings tracking
+            this.saveCompletedOrder();
+            
             // Clear order after successful print
             this.currentOrder = [];
             
@@ -1269,20 +2666,233 @@ class POSApp {
         }
     }
 
+    async autoSilentPrintKOTs() {
+        // FORCE ENABLE CONSOLE LOGGING FOR KOT DEBUGGING
+        const enableDebugLogging = true;
+        if (enableDebugLogging) {
+            console.log('🔧 DEBUG MODE ENABLED - KOT printing diagnostics active');
+        console.log('🚨 CRITICAL DEBUG: autoSilentPrintKOTs method has been called!');
+        console.log('🚨 CRITICAL DEBUG: this.currentOrder length:', this.currentOrder.length);
+        console.log('🚨 CRITICAL DEBUG: this.menuItems length:', this.menuItems.length);
+        }
+        
+        console.log('🔄 Starting autoSilentPrintKOTs...');
+        console.log('📝 Current order items:', this.currentOrder.length);
+        
+        // Split items by kotGroup
+        const kitchenItems = this.currentOrder.filter(item => {
+            const menuItem = this.menuItems.find(mi => mi.id === item.id);
+            
+            // FALLBACK WARNING: Check for undefined kotGroup
+            if (!menuItem) {
+                console.warn(`⚠️ FALLBACK WARNING: Menu item not found for order item "${item.name}" (ID: ${item.id})`);
+                return true; // Default to kitchen if menu item not found
+            }
+            
+            if (!menuItem.kotGroup) {
+                console.warn(`⚠️ FALLBACK WARNING: Menu item "${item.name}" has undefined kotGroup - defaulting to kitchen`);
+                return true; // Default to kitchen if kotGroup is undefined
+            }
+            
+            const isKitchen = menuItem.kotGroup === 'kitchen';
+            console.log(`Item ${item.name} (ID: ${item.id}) - menuItem kotGroup: ${menuItem?.kotGroup} - order item kotGroup: ${item.kotGroup} - isKitchen: ${isKitchen}`);
+            return isKitchen;
+        });
+        
+        const drinksItems = this.currentOrder.filter(item => {
+            const menuItem = this.menuItems.find(mi => mi.id === item.id);
+            
+            // Skip fallback for drinks - only include items explicitly marked as drinks
+            if (!menuItem || !menuItem.kotGroup) {
+                return false;
+            }
+            
+            const isDrinks = menuItem.kotGroup === 'drinks';
+            console.log(`Item ${item.name} (ID: ${item.id}) - menuItem kotGroup: ${menuItem?.kotGroup} - order item kotGroup: ${item.kotGroup} - isDrinks: ${isDrinks}`);
+            return isDrinks;
+        });
+
+        console.log(`🍳 Kitchen items found: ${kitchenItems.length}`);
+        console.log(`☕ Drinks items found: ${drinksItems.length}`);
+
+        // CRITICAL FIX: FORCE KOT PRINTING - NO FAILURES ALLOWED
+        let kotsPrintedCount = 0;
+        let totalKotsNeeded = 0;
+        
+        // Print Kitchen KOT if items exist
+        if (kitchenItems.length > 0) {
+            totalKotsNeeded++;
+            console.log(`🍳 FORCING Kitchen KOT print for ${kitchenItems.length} items...`);
+            
+            try {
+                // Try thermal print first
+                const kitchenKotContent = this.generateKOTContent(kitchenItems, 'KITCHEN KOT');
+                console.log('� Attempting thermal print for Kitchen KOT...');
+                const kotResult = await ipcRenderer.invoke('auto-silent-print', kitchenKotContent, 'Kitchen KOT');
+                console.log('🚨 CRITICAL: Kitchen KOT IPC call completed, result:', JSON.stringify(kotResult));
+                
+                if (kotResult.success) {
+                    console.log('✅ Kitchen KOT printed successfully via thermal printer:', kotResult.printer);
+                    kotsPrintedCount++;
+                } else {
+                    throw new Error('Thermal print failed, forcing preview');
+                }
+            } catch (error) {
+                // FORCE PREVIEW MODE - NO FAILURES ALLOWED
+                console.log('⚠️ Kitchen KOT thermal failed, FORCING preview mode...');
+                try {
+                    await this.printSingleKOT(kitchenItems, 'KITCHEN KOT');
+                    console.log('✅ Kitchen KOT printed successfully via FORCED preview mode');
+                    kotsPrintedCount++;
+                } catch (previewError) {
+                    console.error('❌ CRITICAL: Kitchen KOT preview mode failed:', previewError);
+                    // LAST RESORT: Create manual preview window
+                    this.forceKOTPreview(kitchenItems, 'KITCHEN KOT');
+                    kotsPrintedCount++;
+                }
+            }
+        }
+        
+        // Print Drinks KOT if items exist
+        if (drinksItems.length > 0) {
+            totalKotsNeeded++;
+            console.log(`☕ FORCING Drinks KOT print for ${drinksItems.length} items...`);
+            
+            try {
+                // Try thermal print first
+                const drinksKotContent = this.generateKOTContent(drinksItems, 'DRINKS KOT');
+                console.log('� Attempting thermal print for Drinks KOT...');
+                const kotResult = await ipcRenderer.invoke('auto-silent-print', drinksKotContent, 'Drinks KOT');
+                console.log('🚨 CRITICAL: Drinks KOT IPC call completed, result:', JSON.stringify(kotResult));
+                
+                if (kotResult.success) {
+                    console.log('✅ Drinks KOT printed successfully via thermal printer:', kotResult.printer);
+                    kotsPrintedCount++;
+                } else {
+                    throw new Error('Thermal print failed, forcing preview');
+                }
+            } catch (error) {
+                // FORCE PREVIEW MODE - NO FAILURES ALLOWED
+                console.log('⚠️ Drinks KOT thermal failed, FORCING preview mode...');
+                try {
+                    await this.printSingleKOT(drinksItems, 'DRINKS KOT');
+                    console.log('✅ Drinks KOT printed successfully via FORCED preview mode');
+                    kotsPrintedCount++;
+                } catch (previewError) {
+                    console.error('❌ CRITICAL: Drinks KOT preview mode failed:', previewError);
+                    // LAST RESORT: Create manual preview window
+                    this.forceKOTPreview(drinksItems, 'DRINKS KOT');
+                    kotsPrintedCount++;
+                }
+            }
+        }
+
+        console.log(`📊 KOT FORCE PRINT SUMMARY: ${kotsPrintedCount}/${totalKotsNeeded} KOTs printed`);
+        
+        // If no items to print, that's success
+        if (totalKotsNeeded === 0) {
+            console.log('ℹ️ No KOTs needed - order has no kitchen or drinks items');
+            return { success: true, kotsPrinted: 0, kotsTotal: 0 };
+        }
+        
+        // SUCCESS: At least one KOT was printed
+        const success = kotsPrintedCount > 0;
+        console.log(success ? '✅ KOT FORCE PRINT SUCCESSFUL' : '❌ KOT FORCE PRINT FAILED');
+        
+        return { 
+            success: success,
+            kotsPrinted: kotsPrintedCount,
+            kotsTotal: totalKotsNeeded,
+            fallbackToPreview: false // We handle our own fallbacks
+        };
+    }
+    
+    // EMERGENCY FALLBACK: Force KOT preview when all else fails
+    forceKOTPreview(items, kotTitle) {
+        console.log(`� EMERGENCY: Creating force preview for ${kotTitle}`);
+        try {
+            const kotContent = this.generateKOTContent(items, kotTitle);
+            const emergencyWindow = window.open('', '_blank', 'width=350,height=600,scrollbars=yes');
+            
+            if (emergencyWindow) {
+                emergencyWindow.document.write(kotContent);
+                emergencyWindow.document.close();
+                
+                // Auto-trigger print dialog after a short delay
+                setTimeout(() => {
+                    try {
+                        emergencyWindow.print();
+                    } catch (printError) {
+                        console.error('Emergency print dialog failed:', printError);
+                    }
+                }, 1000);
+                
+                console.log(`✅ EMERGENCY: ${kotTitle} force preview created successfully`);
+            } else {
+                console.error('❌ EMERGENCY: Could not create emergency preview window');
+            }
+        } catch (error) {
+            console.error('❌ EMERGENCY: Force preview creation failed:', error);
+        }
+
+    }
+
     async printKOT() {
-        // Generate KOT HTML content (items and quantities only - no prices)
-        const kotContent = this.generateKOTContent();
+        // Split items by kotGroup
+        const kitchenItems = this.currentOrder.filter(item => {
+            const menuItem = this.menuItems.find(mi => mi.id === item.id);
+            return menuItem && menuItem.kotGroup === 'kitchen';
+        });
+        
+        const drinksItems = this.currentOrder.filter(item => {
+            const menuItem = this.menuItems.find(mi => mi.id === item.id);
+            return menuItem && menuItem.kotGroup === 'drinks';
+        });
+
+        // Print KOTs based on what items are present
+        const printPromises = [];
+        
+        if (kitchenItems.length > 0) {
+            printPromises.push(this.printSingleKOT(kitchenItems, 'KITCHEN KOT'));
+        }
+        
+        if (drinksItems.length > 0) {
+            printPromises.push(this.printSingleKOT(drinksItems, 'DRINKS KOT'));
+        }
+        
+        // Print both KOTs simultaneously for speed
+        await Promise.all(printPromises);
+    }
+
+    async printSingleKOT(items, kotTitle) {
+        // Generate KOT HTML content for specific items group
+        const kotContent = this.generateKOTContent(items, kotTitle);
         
         // Create a new window for printing KOT
         const kotWindow = window.open('', '_blank', 'width=300,height=600');
         kotWindow.document.write(kotContent);
         kotWindow.document.close();
         
-        // Wait for content to load then print
-        setTimeout(() => {
-            kotWindow.print();
-            kotWindow.close();
-        }, 500);
+        // Wait for content to load then print - FIXED: Don't close window immediately
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                kotWindow.print();
+                
+                // CRITICAL FIX: Listen for afterprint event before closing window
+                kotWindow.addEventListener('afterprint', () => {
+                    kotWindow.close();
+                    resolve();
+                });
+                
+                // Fallback: Close after 3 seconds if afterprint doesn't fire
+                setTimeout(() => {
+                    if (!kotWindow.closed) {
+                        kotWindow.close();
+                    }
+                    resolve();
+                }, 3000);
+            }, 1000); // Increased delay for proper content loading
+        });
     }
 
     async printCustomerBill() {
@@ -1301,9 +2911,12 @@ class POSApp {
         }, 1000); // Slight delay after KOT
     }
 
-    generateKOTContent() {
+    generateKOTContent(items = this.currentOrder, kotTitle = 'KITCHEN ORDER TICKET') {
         const now = new Date();
         const locationText = this.billingMode === 'table' ? `Table ${this.currentLocation}` : `Counter ${this.currentLocation}`;
+        
+        // Check if this order contains any parcel items
+        const hasParcelItems = items.some(item => (item.parcelCharge || 0) > 0);
         
         return `
             <!DOCTYPE html>
@@ -1317,109 +2930,156 @@ class POSApp {
                             size: 80mm auto;
                             margin: 0;
                         }
-                        body { margin: 0 !important; padding: 2mm !important; }
-                        body, table { font-size: 16px; } /* Enhanced font size for thermal printing */
+                        body { 
+                            margin: 0 !important; 
+                            padding: 2mm !important; 
+                        }
+                        body, table { 
+                            font-size: 10px; /* Keep current size */
+                        }
                         * { 
                             -webkit-print-color-adjust: exact !important; 
                             color-adjust: exact !important;
                             print-color-adjust: exact !important;
+                            box-sizing: border-box;
+                            /* THERMAL PRINT OPTIMIZATION: Force solid black for all elements */
+                            color: #000000 !important;
+                            border-color: #000000 !important;
                         }
                     }
                     body { 
-                        font-family: 'Courier New', 'Liberation Mono', 'DejaVu Sans Mono', monospace; 
-                        font-size: 16px; /* Increased base font size */
-                        font-weight: 900;
+                        font-family: Arial, Tahoma, 'Segoe UI', sans-serif !important; /* OPTIMIZED: Clean system fonts for thermal clarity */
+                        font-size: 10px;
+                        font-weight: bold !important; /* OPTIMIZED: Bold for better thermal print visibility */
                         margin: 0; 
                         padding: 2mm;
-                        width: 76mm;
+                        width: 270px;
+                        max-width: 270px;
                         background: white !important;
-                        color: #000000 !important;
-                        line-height: 1.3; /* Better line spacing */
-                        -webkit-font-smoothing: none !important;
-                        font-smoothing: none !important;
-                        text-rendering: optimizeSpeed !important;
+                        color: #000000 !important; /* OPTIMIZED: Solid black */
+                        line-height: 1.2;
+                        -webkit-font-smoothing: antialiased !important; /* OPTIMIZED: Better text rendering */
+                        font-smoothing: antialiased !important;
+                        text-rendering: optimizeLegibility !important; /* OPTIMIZED: Better text clarity */
+                        box-sizing: border-box;
+                        word-wrap: break-word;
+                        overflow-wrap: break-word;
                     }
                     .header { 
                         text-align: center; 
                         border-bottom: 2px solid #000; 
                         padding-bottom: 6px; 
                         margin-bottom: 8px; 
+                        box-sizing: border-box; /* ADDED: Better sizing */
                     }
                     .kot-title { 
-                        font-weight: 900; 
-                        font-size: 18px; /* Increased from 14px */
+                        font-weight: bold !important; /* OPTIMIZED: Bold for thermal clarity */
+                        font-size: 12px;
                         margin-bottom: 3px; 
-                        color: #000000 !important;
+                        color: #000000 !important; /* OPTIMIZED: Solid black */
                         letter-spacing: 1px;
+                        word-wrap: break-word;
                     }
                     .location { 
-                        font-size: 16px; /* Increased from 12px */
+                        font-size: 10px;
                         margin: 2px 0; 
-                        font-weight: 800; 
-                        color: #000000 !important;
+                        font-weight: bold !important; /* OPTIMIZED: Bold for thermal clarity */
+                        color: #000000 !important; /* OPTIMIZED: Solid black */
+                        word-wrap: break-word;
                     }
                     .datetime { 
-                        font-size: 14px; /* Increased from 10px */
+                        font-size: 9px;
                         margin: 2px 0; 
-                        font-weight: 700;
-                        color: #000000 !important;
+                        font-weight: bold !important; /* OPTIMIZED: Bold for thermal clarity */
+                        color: #000000 !important; /* OPTIMIZED: Solid black */
+                        word-wrap: break-word;
                     }
                     .items { 
                         margin: 8px 0; 
+                        box-sizing: border-box;
                     }
                     .item-row { 
                         display: flex; 
                         justify-content: space-between; 
                         align-items: flex-start;
-                        margin: 3px 0; /* Increased spacing */
-                        padding: 2px 0; /* Increased padding */
-                        border-bottom: 1px dotted #333;
-                        min-height: 16px; /* Increased height */
+                        margin: 2px 0;
+                        padding: 1px 0;
+                        border-bottom: 1px solid #000000 !important; /* OPTIMIZED: Solid black instead of dotted */
+                        min-height: 12px;
+                        box-sizing: border-box;
                     }
                     .item-name { 
                         flex: 1; 
-                        font-size: 15px; /* Increased from 11px */
-                        font-weight: 800;
-                        color: #000000 !important;
+                        font-size: 10px;
+                        font-weight: bold !important; /* OPTIMIZED: Bold for thermal clarity */
+                        color: #000000 !important; /* OPTIMIZED: Solid black */
                         padding-right: 4px;
                         word-wrap: break-word;
+                        overflow-wrap: break-word;
+                        box-sizing: border-box;
                     }
                     .item-qty { 
-                        width: 25mm; 
+                        width: 20mm;
                         text-align: right; 
-                        font-weight: 900; 
-                        font-size: 15px; /* Increased from 11px */
-                        color: #000000 !important;
+                        font-weight: bold !important; /* OPTIMIZED: Bold for thermal clarity */
+                        font-size: 10px;
+                        color: #000000 !important; /* OPTIMIZED: Solid black */
                         flex-shrink: 0;
+                        box-sizing: border-box;
                     }
                     .footer { 
-                        border-top: 2px solid #000; 
+                        border-top: 2px solid #000000 !important; /* OPTIMIZED: Solid black border */
                         margin-top: 8px; 
                         padding-top: 4px; 
                         text-align: center; 
-                        font-size: 14px; /* Increased from 10px */
-                        font-weight: 800;
+                        font-size: 9px;
+                        font-weight: bold !important; /* OPTIMIZED: Bold for thermal clarity */
+                        box-sizing: border-box;
+                        word-wrap: break-word;
+                        color: #000000 !important; /* OPTIMIZED: Solid black */
                     }
                     .total-items { 
-                        font-weight: 900; 
+                        font-weight: bold !important; /* OPTIMIZED: Bold for thermal clarity */
                         margin: 6px 0; 
                         text-align: center; 
-                        font-size: 16px; /* Increased from 12px */
+                        font-size: 11px;
+                        color: #000000 !important; /* OPTIMIZED: Solid black */
+                        border: 3px solid #000000 !important; /* OPTIMIZED: Thicker solid black border */
+                        padding: 3px;
+                        box-sizing: border-box;
+                        word-wrap: break-word;
+                    }
+                    .parcel-order-label { 
+                        font-weight: bold !important;
+                        margin: 8px 0; 
+                        text-align: center; 
+                        font-size: 12px;
                         color: #000000 !important;
-                        border: 2px solid #000;
-                        padding: 4px; /* Increased padding */
+                        border: 4px solid #000000 !important;
+                        padding: 6px 4px;
+                        box-sizing: border-box;
+                        word-wrap: break-word;
+                        background: white !important;
+                        letter-spacing: 2px;
+                        text-transform: uppercase;
                     }
                 </style>
             </head>
             <body>
                 <div class="header">
-                    <div class="kot-title">KITCHEN ORDER TICKET</div>
+                    <div class="kot-title">${kotTitle}</div>
                     <div class="location">${locationText}</div>
                     <div class="datetime">${now.toLocaleString('en-IN')}</div>
                 </div>
                 
+                ${hasParcelItems ? `
+                <div class="parcel-order-label">
+                    *** PARCEL ORDER ***
+                </div>
+                ` : ''}
+                
                 <div class="items">
-                    ${this.currentOrder.map(item => `
+                    ${items.map(item => `
                         <div class="item-row">
                             <span class="item-name">${item.name}</span>
                             <span class="item-qty">x${item.quantity}</span>
@@ -1428,11 +3088,11 @@ class POSApp {
                 </div>
                 
                 <div class="total-items">
-                    TOTAL ITEMS: ${this.currentOrder.reduce((sum, item) => sum + item.quantity, 0)}
+                    TOTAL ITEMS: ${items.reduce((sum, item) => sum + item.quantity, 0)}
                 </div>
                 
                 <div class="footer">
-                    <div>*** KITCHEN COPY ***</div>
+                    <div>*** ${kotTitle === 'KITCHEN KOT' ? 'KITCHEN' : 'DRINKS'} COPY ***</div>
                 </div>
             </body>
             </html>
@@ -1456,150 +3116,252 @@ class POSApp {
                             size: 80mm auto;
                             margin: 0;
                         }
-                        body { margin: 0 !important; padding: 2mm !important; }
-                        body, table { font-size: 16px; } /* Enhanced font size for thermal printing */
+                        body { 
+                            margin: 0 !important; 
+                            padding: 2mm !important; 
+                        }
+                        body, table { 
+                            font-size: 11px; /* ENHANCED: +1px for better visibility */
+                        }
                         * { 
                             -webkit-print-color-adjust: exact !important; 
                             color-adjust: exact !important;
                             print-color-adjust: exact !important;
+                            box-sizing: border-box;
+                            /* THERMAL PRINT OPTIMIZATION: Force solid black for all elements */
+                            color: #000000 !important;
+                            border-color: #000000 !important;
+                        }
+                        /* HIGH-DPI OPTIMIZATION: Enhanced for 200+ DPI thermal printers */
+                        @media print and (min-resolution: 200dpi) {
+                            body, table { font-size: 12px; }
+                            .restaurant-name { font-size: 16px; }
+                            .bill-title { font-size: 14px; }
+                            .grand-total { font-size: 14px; }
                         }
                     }
                     body { 
-                        font-family: 'Courier New', 'Liberation Mono', 'DejaVu Sans Mono', monospace; 
-                        font-size: 16px; /* Increased base font size */
-                        font-weight: 900;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern clean font with fallbacks */
+                        font-size: 11px; /* ENHANCED: +1px base size for better readability */
+                        font-weight: bold !important; /* THERMAL: Bold for solid thermal dots */
                         margin: 0; 
                         padding: 2mm;
-                        width: 76mm;
+                        width: 270px;
+                        max-width: 270px;
                         background: white !important;
-                        color: #000000 !important;
-                        line-height: 1.3; /* Better line spacing */
-                        -webkit-font-smoothing: none !important;
-                        font-smoothing: none !important;
-                        text-rendering: optimizeSpeed !important;
+                        color: #000000 !important; /* THERMAL: Solid black only */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        -webkit-font-smoothing: none !important; /* THERMAL: Disable anti-aliasing */
+                        font-smoothing: none !important; /* THERMAL: Disable smoothing */
+                        text-rendering: optimizeLegibility !important; /* ENHANCED: Better text rendering */
+                        -webkit-font-feature-settings: "kern" 1, "liga" 0 !important; /* ENHANCED: Optimized kerning */
+                        font-feature-settings: "kern" 1, "liga" 0 !important; /* ENHANCED: Optimized kerning */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Micro-spacing for clarity */
+                        box-sizing: border-box;
+                        word-wrap: break-word;
+                        overflow-wrap: break-word;
+                        image-rendering: pixelated !important; /* THERMAL: Sharp edges */
                     }
                     .header { 
                         text-align: center; 
                         border-bottom: 2px solid #000; 
                         padding-bottom: 6px; 
                         margin-bottom: 8px; 
+                        box-sizing: border-box; /* ADDED: Better sizing */
                     }
                     .restaurant-name { 
-                        font-weight: 900; 
-                        font-size: 18px; /* Increased from 14px */
+                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
+                        font-size: 15px; /* ENHANCED: +1px for better restaurant name visibility */
                         margin-bottom: 3px; 
-                        color: #000000 !important;
-                        letter-spacing: 0.5px;
+                        color: #000000 !important; /* THERMAL: Solid black */
+                        letter-spacing: 0.3px; /* THERMAL: Reduced spacing for clarity */
+                        word-wrap: break-word;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
                     }
                     .restaurant-details { 
-                        font-size: 12px; /* Increased from 9px */
+                        font-size: 11px; /* ENHANCED: +1px for better address/contact readability */
                         margin: 1px 0; 
-                        font-weight: 700;
-                        color: #000000 !important;
-                        line-height: 1.2; /* Better spacing */
+                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
+                        color: #000000 !important; /* THERMAL: Solid black */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing, increased from 1.1 */
+                        word-wrap: break-word;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
                     }
                     .bill-title { 
-                        font-weight: 900; 
-                        font-size: 16px; /* Increased from 13px */
+                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
+                        font-size: 13px; /* ENHANCED: +1px for better bill title visibility */
                         margin: 4px 0; 
-                        color: #000000 !important;
-                        border: 1px solid #000;
-                        padding: 3px; /* Increased padding */
+                        color: #000000 !important; /* THERMAL: Solid black */
+                        border: 2px solid #000000 !important; /* THERMAL: Thicker solid black border */
+                        padding: 2px;
+                        box-sizing: border-box;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
                     }
                     .location { 
-                        font-size: 15px; /* Increased from 12px */
+                        font-size: 11px; /* ENHANCED: +1px for better location/table info readability */
                         margin: 3px 0; 
-                        font-weight: 800; 
-                        color: #000000 !important;
+                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
+                        color: #000000 !important; /* THERMAL: Solid black */
+                        word-wrap: break-word;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
                     }
                     .datetime { 
-                        font-size: 13px; /* Increased from 10px */
+                        font-size: 11px; /* ENHANCED: +1px for better readability */
                         margin: 2px 0; 
-                        font-weight: 700;
-                        color: #000000 !important;
+                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
+                        color: #000000 !important; /* THERMAL: Solid black */
+                        word-wrap: break-word;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
                     }
                     .items { 
                         margin: 8px 0; 
                         width: 100%;
+                        box-sizing: border-box;
                     }
                     .item-header { 
                         display: flex; 
                         justify-content: space-between; 
-                        border-bottom: 2px solid #000; 
-                        padding: 3px 0; /* Increased padding */
-                        font-weight: 900; 
-                        font-size: 13px; /* Increased from 10px */
-                        color: #000000 !important;
+                        border-bottom: 2px solid #000000 !important; /* THERMAL: Solid black border */
+                        padding: 2px 0;
+                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
+                        font-size: 11px; /* ENHANCED: +1px for better header readability */
+                        color: #000000 !important; /* THERMAL: Solid black */
                         margin-bottom: 2px;
+                        box-sizing: border-box;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
                     }
                     .item-row { 
                         display: flex; 
                         justify-content: space-between; 
                         align-items: flex-start;
-                        margin: 2px 0; /* Increased spacing */
-                        font-size: 13px; /* Increased from 10px */
-                        padding: 2px 0; /* Increased padding */
-                        border-bottom: 1px dotted #333;
-                        font-weight: 700;
-                        min-height: 16px; /* Increased height */
+                        margin: 1px 0;
+                        font-size: 11px; /* ENHANCED: +1px for better item row readability */
+                        padding: 1px 0;
+                        border-bottom: 1px solid #000000 !important; /* THERMAL: Solid black instead of dotted */
+                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
+                        min-height: 13px; /* ENHANCED: Adjusted for increased font size */
+                        box-sizing: border-box;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
                     }
                     .item-name { 
                         flex: 1; 
-                        color: #000000 !important;
-                        font-weight: 800;
+                        color: #000000 !important; /* THERMAL: Solid black */
+                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
                         padding-right: 2px;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
+                    }
                         word-wrap: break-word;
-                        max-width: 45mm;
+                        max-width: 35mm;
+                        overflow-wrap: break-word;
+                        box-sizing: border-box;
                     }
                     .item-qty { 
-                        width: 15mm; 
+                        width: 12mm;
                         text-align: center; 
-                        color: #000000 !important;
-                        font-weight: 900;
+                        color: #000000 !important; /* THERMAL: Solid black */
+                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
                         flex-shrink: 0;
+                        box-sizing: border-box;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
                     }
                     .item-rate { 
-                        width: 18mm; 
+                        width: 15mm;
                         text-align: right; 
-                        color: #000000 !important;
-                        font-weight: 800;
+                        color: #000000 !important; /* THERMAL: Solid black */
+                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
                         flex-shrink: 0;
+                        box-sizing: border-box;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
                     }
                     .item-total { 
-                        width: 20mm; 
+                        width: 18mm;
                         text-align: right; 
-                        color: #000000 !important;
-                        font-weight: 900;
+                        color: #000000 !important; /* THERMAL: Solid black */
+                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
                         flex-shrink: 0;
+                        box-sizing: border-box;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
+                    }
+                    .parcel-charge-row {
+                        font-size: 10px; /* ENHANCED: +1px for better parcel charge readability */
+                        color: #333333 !important; /* THERMAL: Slightly lighter for sub-items */
+                        border-bottom: none !important; /* THERMAL: No border for sub-items */
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
+                    }
+                    .parcel-charge-row .item-name {
+                        font-style: italic; /* THERMAL: Italic for parcel charge indication */
+                        padding-left: 4px; /* THERMAL: Indent parcel charges */
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
                     }
                     .totals { 
-                        border-top: 2px solid #000; 
+                        border-top: 2px solid #000000 !important; /* OPTIMIZED: Solid black border */
                         margin-top: 8px; 
                         padding-top: 4px; 
+                        box-sizing: border-box;
                     }
                     .total-row { 
                         display: flex; 
                         justify-content: space-between; 
                         margin: 2px 0; 
-                        font-weight: 800;
+                        font-weight: bold !important; /* OPTIMIZED: Bold for thermal clarity */
+                        box-sizing: border-box;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        font-size: 11px; /* ENHANCED: +1px for better total row readability */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
                     }
                     .grand-total { 
-                        font-weight: 900; 
-                        border: 2px solid #000; 
-                        padding: 5px; /* Increased padding */
-                        font-size: 16px; /* Increased from 13px */
-                        color: #000000 !important;
+                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
+                        border: 3px solid #000000 !important; /* THERMAL: Thicker solid black border */
+                        padding: 3px;
+                        font-size: 13px; /* ENHANCED: +1px for better grand total visibility */
+                        color: #000000 !important; /* THERMAL: Solid black */
                         background: white !important;
                         margin: 3px 0;
+                        box-sizing: border-box;
+                        word-wrap: break-word;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
                     }
                     .footer { 
-                        border-top: 2px solid #000; 
+                        border-top: 2px solid #000000 !important; /* THERMAL: Solid black border */
                         margin-top: 8px; 
                         padding-top: 4px; 
                         text-align: center; 
-                        font-size: 13px; /* Increased from 10px */
-                        font-weight: 700;
-                        line-height: 1.3; /* Better spacing */
+                        font-size: 9px; /* ENHANCED: +1px for better footer readability */
+                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
+                        line-height: 1.3; /* ENHANCED: Improved readability spacing, increased from 1.1 */
+                        box-sizing: border-box;
+                        word-wrap: break-word;
+                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
+                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
+                    }
+                        color: #000000 !important; /* THERMAL: Solid black */
                     }
                 </style>
             </head>
@@ -1627,17 +3389,40 @@ class POSApp {
                         <span class="item-rate">Rate</span>
                         <span class="item-total">Amount</span>
                     </div>
-                    ${this.currentOrder.map((item, index) => `
+                    ${this.currentOrder.map((item, index) => {
+                        const itemSubtotal = item.price * item.quantity;
+                        const parcelChargeForItem = (item.parcelCharge || 0) * item.quantity;
+                        const itemTotal = itemSubtotal + parcelChargeForItem;
+                        
+                        return `
                         <div class="item-row">
-                            <span class="item-name">${(index + 1)}. ${item.name}</span>
+                            <span class="item-name">${(index + 1)}. ${item.name}${item.parcelCharge > 0 ? ' 📦' : ''}</span>
                             <span class="item-qty">${item.quantity}</span>
                             <span class="item-rate">₹${item.price.toFixed(2)}</span>
-                            <span class="item-total">₹${(item.price * item.quantity).toFixed(2)}</span>
+                            <span class="item-total">₹${itemSubtotal.toFixed(2)}</span>
                         </div>
-                    `).join('')}
+                        ${item.parcelCharge > 0 ? `
+                        <div class="item-row parcel-charge-row">
+                            <span class="item-name">  └ Parcel Charge (₹${item.parcelCharge})</span>
+                            <span class="item-qty">${item.quantity}</span>
+                            <span class="item-rate">₹${item.parcelCharge.toFixed(2)}</span>
+                            <span class="item-total">₹${parcelChargeForItem.toFixed(2)}</span>
+                        </div>` : ''}
+                        `;
+                    }).join('')}
                 </div>
                 
                 <div class="totals">
+                    <div class="total-row">
+                        <span>Subtotal:</span>
+                        <span>₹${this.getSubtotal().toFixed(2)}</span>
+                    </div>
+                    ${this.getTotalParcelCharges() > 0 ? `
+                    <div class="total-row">
+                        <span>Parcel Charges (${this.getParcelItemsCount()} items):</span>
+                        <span>₹${this.getTotalParcelCharges().toFixed(2)}</span>
+                    </div>
+                    ` : ''}
                     <div class="total-row grand-total">
                         <span>TOTAL:</span>
                         <span>₹${total.toFixed(2)}</span>
@@ -1645,7 +3430,6 @@ class POSApp {
                 </div>
                 
                 <div class="footer">
-                    <div>Thank you for dining with us!</div>
                     <div>Powered by: NMD</div>
                     <div>*** Thank you, Visit again ***</div>
                 </div>
@@ -1653,4 +3437,183 @@ class POSApp {
             </html>
         `;
     }
+
+    // ===== EARNINGS FUNCTIONALITY =====
+
+    saveCompletedOrder() {
+        // Save completed order data for earnings tracking
+        if (this.currentOrder.length === 0) return;
+
+        try {
+            const completedOrdersKey = 'completedOrders';
+            const existingOrders = JSON.parse(localStorage.getItem(completedOrdersKey) || '[]');
+            
+            const completedOrder = {
+                timestamp: new Date().toISOString(),
+                date: new Date().toDateString(),
+                location: this.billingMode === 'table' ? `Table ${this.currentLocation}` : `Counter ${this.currentLocation}`,
+                billingMode: this.billingMode,
+                items: this.currentOrder.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price,
+                    originalPrice: item.originalPrice || item.price,
+                    category: item.category || 'General',
+                    parcelCharge: item.parcelCharge || 0,
+                    parcelType: item.parcelType || null
+                })),
+                subtotal: this.getSubtotal(),
+                parcelCharges: this.getTotalParcelCharges(),
+                parcelItemsCount: this.getParcelItemsCount(),
+                total: this.getTotal()
+            };
+
+            existingOrders.push(completedOrder);
+            localStorage.setItem(completedOrdersKey, JSON.stringify(existingOrders));
+            
+            console.log('Order saved for earnings tracking:', completedOrder);
+        } catch (error) {
+            console.error('Error saving completed order:', error);
+        }
+    }
+
+    loadEarningsData() {
+        const period = document.getElementById('earnings-period').value;
+        const completedOrders = this.getCompletedOrdersForPeriod(period);
+        
+        if (completedOrders.length === 0) {
+            this.showNoEarningsData();
+            return;
+        }
+
+        const earningsData = this.calculateEarningsFromOrders(completedOrders);
+        this.renderEarningsData(earningsData);
+    }
+
+    getCompletedOrdersForPeriod(period) {
+        try {
+            const allOrders = JSON.parse(localStorage.getItem('completedOrders') || '[]');
+            const now = new Date();
+            
+            let startDate;
+            
+            switch (period) {
+                case 'today':
+                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    break;
+                case 'week':
+                    startDate = new Date(now);
+                    startDate.setDate(now.getDate() - 7);
+                    break;
+                case 'month':
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    break;
+                case 'year':
+                    startDate = new Date(now.getFullYear(), 0, 1);
+                    break;
+                default:
+                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            }
+
+            return allOrders.filter(order => {
+                const orderDate = new Date(order.timestamp);
+                return orderDate >= startDate && orderDate <= now;
+            });
+        } catch (error) {
+            console.error('Error loading completed orders:', error);
+            return [];
+        }
+    }
+
+    calculateEarningsFromOrders(orders) {
+        const itemSales = {};
+        let totalOrders = orders.length;
+        let totalItemsSold = 0;
+        let totalEarnings = 0;
+
+        orders.forEach(order => {
+            totalEarnings += order.total;
+            
+            order.items.forEach(item => {
+                totalItemsSold += item.quantity;
+                
+                const itemKey = item.name;
+                if (!itemSales[itemKey]) {
+                    itemSales[itemKey] = {
+                        name: item.name,
+                        category: item.category,
+                        quantitySold: 0,
+                        totalEarnings: 0
+                    };
+                }
+                
+                itemSales[itemKey].quantitySold += item.quantity;
+                itemSales[itemKey].totalEarnings += (item.price * item.quantity);
+            });
+        });
+
+        // Convert to array and sort by earnings
+        const itemSalesArray = Object.values(itemSales);
+        itemSalesArray.sort((a, b) => b.totalEarnings - a.totalEarnings);
+
+        return {
+            totalOrders,
+            totalItemsSold,
+            totalEarnings,
+            itemSales: itemSalesArray
+        };
+    }
+
+    renderEarningsData(data) {
+        // Hide no data message
+        document.getElementById('no-earnings-data').style.display = 'none';
+        
+        // Update summary cards
+        document.getElementById('total-orders').textContent = data.totalOrders;
+        document.getElementById('total-items-sold').textContent = data.totalItemsSold;
+        document.getElementById('total-earnings').textContent = `₹${data.totalEarnings.toFixed(2)}`;
+
+        // Render items table
+        const tableBody = document.getElementById('earnings-table-body');
+        tableBody.innerHTML = '';
+
+        if (data.itemSales.length === 0) {
+            this.showNoEarningsData();
+            return;
+        }
+
+        data.itemSales.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'earnings-table-row';
+            
+            row.innerHTML = `
+                <div class="table-col item-name-col">${item.name}</div>
+                <div class="table-col qty-col">${item.quantitySold}</div>
+                <div class="table-col total-col">₹${item.totalEarnings.toFixed(2)}</div>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+
+        // Show earnings table
+        document.querySelector('.earnings-table-container').style.display = 'block';
+        document.querySelector('.earnings-summary').style.display = 'grid';
+    }
+
+    showNoEarningsData() {
+        // Hide earnings table and summary
+        document.querySelector('.earnings-table-container').style.display = 'none';
+        document.querySelector('.earnings-summary').style.display = 'none';
+        
+        // Show no data message
+        document.getElementById('no-earnings-data').style.display = 'block';
+        
+        // Reset summary values
+        document.getElementById('total-orders').textContent = '0';
+        document.getElementById('total-items-sold').textContent = '0';
+        document.getElementById('total-earnings').textContent = '₹0.00';
+    }
+
+    // ===== END EARNINGS FUNCTIONALITY =====
 }

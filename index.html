@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Udupi POS - Restaurant Billing System</title>
+    <title>Swift Bill POS </title>
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/billing.css">
 </head>
@@ -11,7 +11,7 @@
     <div id="app">
         <!-- Header -->
         <header class="pos-header">
-            <h1>Udupi Restaurant POS</h1>
+            <h1>Udupi Krishnam Veg</h1>
             <div class="header-info">
                 <span id="current-date"></span>
                 <span id="current-time"></span>
@@ -27,12 +27,17 @@
                     <div class="service-card" id="table-service-btn">
                         <div class="service-icon">🍽️</div>
                         <div class="service-title">Table Service</div>
-                        <div class="service-description">Dine-in with table assignments</div>
+                        <div class="service-description">Table Service Bills</div>
                     </div>
                     <div class="service-card" id="counter-service-btn">
                         <div class="service-icon">🥡</div>
                         <div class="service-title">Counter Billing</div>
-                        <div class="service-description">Takeaway orders with ₹5 discount per item</div>
+                        <div class="service-description">Counter Bills</div>
+                    </div>
+                    <div class="service-card" id="view-earnings-btn">
+                        <div class="service-icon">📊</div>
+                        <div class="service-title">View Earnings</div>
+                        <div class="service-description">Sales Reports & Analytics</div>
                     </div>
                 </div>
             </div>
@@ -68,6 +73,7 @@
                         <span id="billing-mode-text">Table Service</span>
                     </div>
                     <div class="billing-actions">
+                        <button id="manage-menu" class="btn btn-primary">📋 Menu Manager</button>
                         <button id="print-order" class="btn btn-success">🖨 Print</button>
                     </div>
                 </div>
@@ -105,6 +111,11 @@
                                 <span>Tax (5%):</span>
                                 <span id="tax">₹0.00</span>
                             </div>
+                            <!-- Selective Parcel Charges Summary -->
+                            <div class="total-line parcel-charge-line" id="parcel-summary-line" style="display: none;">
+                                <span>Parcel Charges:</span>
+                                <span id="parcel-charge-amount" class="parcel-charge-amount"></span>
+                            </div>
                             <div class="total-line total-final">
                                 <span>Total:</span>
                                 <span id="total">₹0.00</span>
@@ -113,7 +124,247 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Earnings Screen -->
+            <div id="earnings-screen" class="screen">
+                <div class="screen-header">
+                    <button id="back-to-service-from-earnings" class="btn btn-secondary">← Back to Home</button>
+                    <h2>📊 Earnings Report</h2>
+                </div>
+                
+                <div class="earnings-content">
+                    <!-- Time Filter -->
+                    <div class="earnings-filter">
+                        <label for="earnings-period">Report Period:</label>
+                        <select id="earnings-period" class="earnings-select">
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="year">This Year</option>
+                        </select>
+                        <button id="refresh-earnings" class="btn btn-primary">🔄 Refresh</button>
+                    </div>
+
+                    <!-- Total Earnings Summary -->
+                    <div class="earnings-summary">
+                        <div class="summary-card">
+                            <div class="summary-label">Total Orders</div>
+                            <div class="summary-value" id="total-orders">0</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Total Items Sold</div>
+                            <div class="summary-value" id="total-items-sold">0</div>
+                        </div>
+                        <div class="summary-card total-earnings-card">
+                            <div class="summary-label">Total Earnings</div>
+                            <div class="summary-value" id="total-earnings">₹0.00</div>
+                        </div>
+                    </div>
+
+                    <!-- Item-wise Sales Table -->
+                    <div class="earnings-table-container">
+                        <h3>Item-wise Sales</h3>
+                        <div class="earnings-table">
+                            <div class="earnings-table-header">
+                                <div class="table-col item-name-col">Item Name</div>
+                                <div class="table-col qty-col">Qty Sold</div>
+                                <div class="table-col total-col">Total ₹</div>
+                            </div>
+                            <div id="earnings-table-body" class="earnings-table-body">
+                                <!-- Items will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- No Data Message -->
+                    <div id="no-earnings-data" class="no-earnings-data" style="display: none;">
+                        <div class="no-data-icon">📈</div>
+                        <h3>No Sales Data Found</h3>
+                        <p>No orders have been completed in the selected time period.</p>
+                        <p>Complete some orders to see earnings data here.</p>
+                    </div>
+                </div>
+            </div>
         </main>
+
+        <!-- MenuManager Modal -->
+        <div id="menu-manager-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🍽️ Menu Manager</h2>
+                    <button id="close-menu-manager" class="modal-close">&times;</button>
+                </div>
+                
+                <!-- Tab Navigation -->
+                <div class="modal-tabs">
+                    <button class="tab-btn active" data-tab="menu-items">🍽️ Menu Items</button>
+                    <button class="tab-btn" data-tab="settings">⚙️ Settings</button>
+                </div>
+                
+                <div class="modal-body">
+                    <!-- Menu Items Tab -->
+                    <div id="menu-items-tab" class="tab-content active">
+                    <!-- Add New Item Section -->
+                    <div class="menu-manager-section">
+                        <h3>➕ Add New Menu Item</h3>
+                        <form id="add-item-form" class="item-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="item-name">Item Name *</label>
+                                    <input type="text" id="item-name" name="name" required maxlength="50" placeholder="Enter item name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="item-price">Price (₹) *</label>
+                                    <input type="number" id="item-price" name="price" required min="1" max="9999" step="0.01" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="item-category">Category *</label>
+                                    <select id="item-category" name="category" required>
+                                        <option value="">Select Category</option>
+                                        <!-- Categories will be populated dynamically -->
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="item-enabled">Status</label>
+                                    <select id="item-enabled" name="enabled">
+                                        <option value="true">✅ Enabled</option>
+                                        <option value="false">❌ Disabled</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-success">✅ Add Item</button>
+                                <button type="button" id="clear-form" class="btn btn-secondary">🗑️ Clear</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Menu Items List Section -->
+                    <div class="menu-manager-section">
+                        <div class="section-header">
+                            <h3>📋 Manage Menu Items</h3>
+                            <div class="menu-filters">
+                                <select id="filter-category" class="filter-select">
+                                    <option value="all">All Categories</option>
+                                </select>
+                                <select id="filter-status" class="filter-select">
+                                    <option value="all">All Status</option>
+                                    <option value="enabled">✅ Enabled Only</option>
+                                    <option value="disabled">❌ Disabled Only</option>
+                                </select>
+                                <input type="text" id="search-items" placeholder="🔍 Search items..." class="search-input">
+                            </div>
+                        </div>
+                        
+                        <div id="menu-items-list" class="menu-items-list">
+                            <!-- Menu items will be populated here -->
+                        </div>
+                    </div>
+                    </div>
+
+                    <!-- Settings Tab -->
+                    <div id="settings-tab" class="tab-content">
+                        <div class="menu-manager-section">
+                            <h3>🏪 Restaurant Information</h3>
+                            <div class="settings-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="restaurant-name">Restaurant Name</label>
+                                        <input type="text" id="restaurant-name" name="restaurantName" 
+                                               placeholder="Enter restaurant name" maxlength="50">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="restaurant-contact">Contact Number</label>
+                                        <input type="text" id="restaurant-contact" name="restaurantContact" 
+                                               placeholder="Enter contact number" maxlength="20">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="restaurant-address">Address</label>
+                                        <textarea id="restaurant-address" name="restaurantAddress" 
+                                                  placeholder="Enter restaurant address" maxlength="200" rows="3"></textarea>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="restaurant-gstin">GSTIN</label>
+                                        <input type="text" id="restaurant-gstin" name="restaurantGstin" 
+                                               placeholder="Enter GSTIN" maxlength="30">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="restaurant-fssai">FSSAI Number</label>
+                                        <input type="text" id="restaurant-fssai" name="restaurantFssai" 
+                                               placeholder="Enter FSSAI number" maxlength="30">
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" id="save-restaurant-settings" class="btn btn-success">✅ Save Restaurant Info</button>
+                                    <button type="button" id="reset-restaurant-settings" class="btn btn-secondary">🔄 Reset</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <div class="modal-stats">
+                        <span id="items-count">0 items</span>
+                        <span id="enabled-count">0 enabled</span>
+                        <span id="disabled-count">0 disabled</span>
+                    </div>
+                    <button id="save-menu-changes" class="btn btn-primary">💾 Save Changes</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Item Modal -->
+        <div id="edit-item-modal" class="modal">
+            <div class="modal-content modal-small">
+                <div class="modal-header">
+                    <h2>✏️ Edit Menu Item</h2>
+                    <button id="close-edit-item" class="modal-close">&times;</button>
+                </div>
+                
+                <div class="modal-body">
+                    <form id="edit-item-form" class="item-form">
+                        <input type="hidden" id="edit-item-id" name="id">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-item-name">Item Name *</label>
+                                <input type="text" id="edit-item-name" name="name" required maxlength="50">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-item-price">Price (₹) *</label>
+                                <input type="number" id="edit-item-price" name="price" required min="1" max="9999" step="0.01">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-item-category">Category *</label>
+                                <select id="edit-item-category" name="category" required>
+                                    <!-- Categories will be populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-item-enabled">Status</label>
+                                <select id="edit-item-enabled" name="enabled">
+                                    <option value="true">✅ Enabled</option>
+                                    <option value="false">❌ Disabled</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button id="cancel-edit" class="btn btn-secondary">❌ Cancel</button>
+                    <button id="save-edit" class="btn btn-success">✅ Save Changes</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->
