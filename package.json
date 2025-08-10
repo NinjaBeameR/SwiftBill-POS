@@ -24,12 +24,13 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "build": "electron-builder",
+    "build": "npm run build-clean && electron-builder",
+    "build-clean": "npm install --production=false",
     "build-win": "electron-builder --win",
     "build-portable": "electron-builder --win portable",
     "build-installer": "electron-builder --win nsis",
     "dist": "npm run build-portable && npm run build-installer",
-    "package": "electron-packager . \"SwiftBill-POS\" --platform win32 --arch x64 --out dist --ignore node_modules --ignore dist --ignore .git --app-version 1.0.0",
+    "package": "electron-packager . \"SwiftBill-POS\" --platform win32 --arch x64 --out dist --ignore dist --ignore .git --app-version 1.0.0",
     "release": "electron-builder --win --publish always",
     "release-draft": "electron-builder --win --publish never",
     "auto-release": "node -e \"console.log('Use: npm run release-patch|minor|major for automated releases')\"",
@@ -51,6 +52,10 @@
     "appId": "com.swiftbillpos.restaurant",
     "productName": "SwiftBill-POS",
     "copyright": "Copyright © 2025 NMD",
+    "includeSubNodeModules": true,
+    "asarUnpack": [
+      "node_modules/electron-updater/**/*"
+    ],
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -69,7 +74,6 @@
       "package.json",
       "src/**/*",
       "styles/**/*",
-      "!node_modules/**/*",
       "!dist/**/*",
       "!.git/**/*",
       "!README.md",

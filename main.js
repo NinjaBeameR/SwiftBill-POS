@@ -1,7 +1,22 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
-const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
+
+// Import electron-updater with error handling
+let autoUpdater;
+try {
+  autoUpdater = require('electron-updater').autoUpdater;
+} catch (error) {
+  console.warn('electron-updater not available:', error.message);
+  // Create a mock autoUpdater object to prevent crashes
+  autoUpdater = {
+    checkForUpdatesAndNotify: () => Promise.resolve(),
+    checkForUpdates: () => Promise.resolve(),
+    quitAndInstall: () => {},
+    on: () => {},
+    removeAllListeners: () => {}
+  };
+}
 
 let mainWindow;
 
