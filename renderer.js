@@ -290,53 +290,8 @@ class POSApp {
         // Search functionality
         this.setupSearchListeners();
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            switch(e.key) {
-                case 'Escape':
-                    if (document.getElementById('billing-screen').classList.contains('active')) {
-                        if (this.billingMode === 'table') {
-                            this.showTableSelector();
-                        } else {
-                            this.showCounterSelector();
-                        }
-                    } else if (document.getElementById('table-selector-screen').classList.contains('active') || 
-                              document.getElementById('counter-selector-screen').classList.contains('active')) {
-                        this.showServiceSelector();
-                    }
-                    break;
-                case 'F1':
-                    e.preventDefault();
-                    this.printOrder();
-                    break;
-                case 'F2':
-                    e.preventDefault();
-                    this.printOrder();
-                    break;
-                case 'F3':
-                    e.preventDefault();
-                    // Focus on search if billing screen is active
-                    if (document.getElementById('billing-screen').classList.contains('active')) {
-                        document.getElementById('menu-search').focus();
-                    }
-                    break;
-                case 'F4':
-                    e.preventDefault();
-                    // Test print functionality
-                    if (document.getElementById('billing-screen').classList.contains('active')) {
-                        this.testPrint();
-                    }
-                    break;
-                case '/':
-                    // Quick search shortcut
-                    if (document.getElementById('billing-screen').classList.contains('active') && 
-                        !e.target.matches('input, textarea')) {
-                        e.preventDefault();
-                        document.getElementById('menu-search').focus();
-                    }
-                    break;
-            }
-        });
+        // Setup global keyboard shortcuts
+        this.setupGlobalKeyboardShortcuts();
 
         // MenuManager button
         document.getElementById('manage-menu').addEventListener('click', () => {
@@ -348,6 +303,104 @@ class POSApp {
         
         // Update modal event listeners
         this.setupUpdateModalListeners();
+    }
+
+    // Global keyboard shortcuts setup
+    setupGlobalKeyboardShortcuts() {
+        // Remove existing global keydown listener if it exists
+        if (this.globalKeydownHandler) {
+            document.removeEventListener('keydown', this.globalKeydownHandler);
+        }
+
+        // Create the global keydown handler
+        this.globalKeydownHandler = (e) => {
+            // Don't process shortcuts if we're in an input field (except for specific shortcuts)
+            const isInInput = e.target.matches('input, textarea, select');
+            const isInMenuManager = document.getElementById('menu-manager-modal').classList.contains('active');
+            const isInEditModal = document.getElementById('edit-item-modal').classList.contains('active');
+
+            // Handle Menu Manager specific shortcuts
+            if (isInMenuManager) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.closeMenuManager();
+                    return;
+                }
+            }
+
+            // Handle Edit Modal specific shortcuts
+            if (isInEditModal) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.closeEditItemModal();
+                    return;
+                }
+            }
+
+            // Only process main shortcuts if not in Menu Manager/Edit Modal and billing screen is active
+            if (!isInMenuManager && !isInEditModal && document.getElementById('billing-screen').classList.contains('active')) {
+                switch(e.key) {
+                    case 'Escape':
+                        if (this.billingMode === 'table') {
+                            this.showTableSelector();
+                        } else {
+                            this.showCounterSelector();
+                        }
+                        break;
+                    case 'F1':
+                        e.preventDefault();
+                        this.printOrder();
+                        break;
+                    case 'F2':
+                        e.preventDefault();
+                        this.printOrder();
+                        break;
+                    case 'F3':
+                        e.preventDefault();
+                        // Focus on search
+                        this.focusSearchInput();
+                        break;
+                    case 'F4':
+                        e.preventDefault();
+                        // Test print functionality
+                        this.testPrint();
+                        break;
+                    case '/':
+                        // Quick search shortcut - only if not already in an input
+                        if (!isInInput) {
+                            e.preventDefault();
+                            this.focusSearchInput();
+                        }
+                        break;
+                }
+            }
+
+            // Handle other screen navigation
+            if (!isInMenuManager && !isInEditModal) {
+                if (e.key === 'Escape') {
+                    if (document.getElementById('table-selector-screen').classList.contains('active') || 
+                        document.getElementById('counter-selector-screen').classList.contains('active')) {
+                        this.showServiceSelector();
+                    }
+                }
+            }
+        };
+
+        // Add the global keydown listener
+        document.addEventListener('keydown', this.globalKeydownHandler);
+        console.log('✅ Global keyboard shortcuts setup complete');
+    }
+
+    // Helper function to focus search input with proper validation
+    focusSearchInput() {
+        const searchInput = document.getElementById('menu-search');
+        if (searchInput && document.getElementById('billing-screen').classList.contains('active')) {
+            // Ensure the search input is enabled and focusable
+            searchInput.disabled = false;
+            searchInput.removeAttribute('readonly');
+            searchInput.focus();
+            console.log('🔍 Search input focused via shortcut');
+        }
     }
 
     setupSearchListeners() {
@@ -367,11 +420,20 @@ class POSApp {
         }
 
         console.log('POSApp: Search elements found, setting up listeners');
+        console.log('POSApp: Current menuItems status:', {
+            exists: !!this.menuItems,
+            isArray: Array.isArray(this.menuItems),
+            length: this.menuItems ? this.menuItems.length : 0
+        });
 
-        // Search input event with debouncing
-        searchInput.addEventListener('input', (e) => {
+        // Remove existing event listeners to prevent duplicates
+        this.removeSearchListeners();
+
+        // Store references to event handlers for later removal
+        this.searchInputHandler = (e) => {
             const query = e.target.value.trim();
             console.log('POSApp: Search input event, query:', query);
+            console.log('POSApp: Menu items available:', this.menuItems ? this.menuItems.length : 0);
             
             // Clear previous timer
             if (this.searchDebounceTimer) {
@@ -383,10 +445,9 @@ class POSApp {
                 console.log('POSApp: Executing debounced search for:', query);
                 this.performSearch(query);
             }, 300);
-        });
+        };
 
-        // Keyboard navigation in search
-        searchInput.addEventListener('keydown', (e) => {
+        this.searchKeydownHandler = (e) => {
             console.log('POSApp: Search keydown event:', e.key);
             
             if (!searchResults.classList.contains('show')) {
@@ -416,30 +477,53 @@ class POSApp {
                     searchInput.blur();
                     break;
             }
-        });
+        };
 
-        // Hide search results when clicking outside
-        document.addEventListener('click', (e) => {
+        this.searchClickOutsideHandler = (e) => {
             if (!e.target.closest('.search-container')) {
                 console.log('POSApp: Click outside search, hiding results');
                 this.hideSearchResults();
             }
-        });
+        };
 
-        // Clear search when focusing on search input
-        searchInput.addEventListener('focus', () => {
+        this.searchFocusHandler = () => {
             console.log('POSApp: Search input focused');
             if (searchInput.value.trim()) {
                 console.log('POSApp: Re-performing search on focus');
                 this.performSearch(searchInput.value.trim());
             }
-        });
+        };
+
+        // Add event listeners
+        searchInput.addEventListener('input', this.searchInputHandler);
+        searchInput.addEventListener('keydown', this.searchKeydownHandler);
+        document.addEventListener('click', this.searchClickOutsideHandler);
+        searchInput.addEventListener('focus', this.searchFocusHandler);
 
         console.log('POSApp: Search listeners setup complete');
     }
 
+    // Remove search event listeners to prevent duplicates
+    removeSearchListeners() {
+        const searchInput = document.getElementById('menu-search');
+        
+        if (searchInput && this.searchInputHandler) {
+            searchInput.removeEventListener('input', this.searchInputHandler);
+            searchInput.removeEventListener('keydown', this.searchKeydownHandler);
+            document.removeEventListener('click', this.searchClickOutsideHandler);
+            searchInput.removeEventListener('focus', this.searchFocusHandler);
+            console.log('POSApp: Previous search listeners removed');
+        }
+    }
+
     performSearch(query) {
         console.log('POSApp: performSearch called with query:', query);
+        console.log('POSApp: this.menuItems status:', {
+            exists: !!this.menuItems,
+            isArray: Array.isArray(this.menuItems),
+            length: this.menuItems ? this.menuItems.length : 0,
+            enabledCount: this.menuItems ? this.menuItems.filter(item => item.enabled !== false).length : 0
+        });
         
         const searchResults = document.getElementById('search-results');
         
@@ -634,7 +718,56 @@ class POSApp {
         }, 2000);
     }
 
-    // ===== MENU MANAGER FUNCTIONALITY =====
+    // Reload menu items from storage to refresh in-memory array
+    async reloadMenuItems() {
+        try {
+            console.log('🔄 Reloading menu items from storage...');
+            
+            const fs = require('fs');
+            const menuPath = await dataPathManager.getMenuPath();
+            const menuData = JSON.parse(fs.readFileSync(menuPath, 'utf8'));
+            
+            // Store old count for comparison
+            const oldCount = this.menuItems ? this.menuItems.length : 0;
+            const oldEnabledCount = this.menuItems ? this.menuItems.filter(item => item.enabled !== false).length : 0;
+            
+            // Update the in-memory menu items array
+            this.menuItems = menuData.items || [];
+            
+            const newCount = this.menuItems.length;
+            const newEnabledCount = this.menuItems.filter(item => item.enabled !== false).length;
+            
+            console.log(`✅ Menu items reloaded: ${newCount} total (${newEnabledCount} enabled)`);
+            console.log(`📊 Changes: Total: ${oldCount} → ${newCount}, Enabled: ${oldEnabledCount} → ${newEnabledCount}`);
+            
+            // Only refresh search listeners if we're on the billing screen (not in Menu Manager modal)
+            if (document.getElementById('billing-screen').classList.contains('active') && 
+                !document.getElementById('menu-manager-modal').classList.contains('active')) {
+                
+                // Reinitialize search listeners to ensure they work with updated data
+                this.setupSearchListeners();
+                
+                // If there's an active search, re-run it with updated data
+                const searchInput = document.getElementById('menu-search');
+                if (searchInput && searchInput.value.trim()) {
+                    const currentQuery = searchInput.value.trim();
+                    console.log('🔍 Re-running search with updated menu data:', currentQuery);
+                    this.performSearch(currentQuery);
+                }
+            }
+            
+            // If we're on the billing screen, update the menu display
+            if (document.getElementById('billing-screen').classList.contains('active')) {
+                this.renderMenu();
+                console.log('🖼️ Billing screen menu updated');
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Error reloading menu items:', error);
+            return false;
+        }
+    }
     
     setupMenuManagerListeners() {
         // Close menu manager modal
@@ -698,20 +831,6 @@ class POSApp {
             this.searchMenuItems(e.target.value);
         });
 
-        // Keyboard shortcuts for menu manager
-        document.addEventListener('keydown', (e) => {
-            if (document.getElementById('menu-manager-modal').classList.contains('active')) {
-                if (e.key === 'Escape') {
-                    this.closeMenuManager();
-                }
-            }
-            if (document.getElementById('edit-item-modal').classList.contains('active')) {
-                if (e.key === 'Escape') {
-                    this.closeEditItemModal();
-                }
-            }
-        });
-
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -770,6 +889,78 @@ class POSApp {
         document.getElementById('menu-manager-modal').classList.remove('active');
         this.clearAddItemForm();
         this.closeEditItemModal();
+        
+        // Refresh search functionality when returning to billing screen
+        if (document.getElementById('billing-screen').classList.contains('active')) {
+            console.log('🔍 Refreshing search functionality after Menu Manager close');
+            console.log('📊 Current menuItems at close:', {
+                exists: !!this.menuItems,
+                length: this.menuItems ? this.menuItems.length : 0,
+                enabledCount: this.menuItems ? this.menuItems.filter(item => item.enabled !== false).length : 0
+            });
+            
+            // Force refresh the search system
+            this.refreshSearchSystem();
+            
+            // Ensure search input is properly enabled and focusable
+            this.restoreSearchInputState();
+        }
+    }
+
+    // Restore search input to proper functional state
+    restoreSearchInputState() {
+        const searchInput = document.getElementById('menu-search');
+        if (searchInput) {
+            // Ensure search input is enabled and focusable
+            searchInput.disabled = false;
+            searchInput.removeAttribute('readonly');
+            searchInput.removeAttribute('tabindex');
+            
+            // Restore focus capability
+            searchInput.style.pointerEvents = '';
+            searchInput.style.opacity = '';
+            
+            console.log('🔧 Search input state restored:', {
+                disabled: searchInput.disabled,
+                readonly: searchInput.readOnly,
+                tabIndex: searchInput.tabIndex
+            });
+        }
+    }
+
+    // New function to comprehensively refresh the search system
+    refreshSearchSystem() {
+        console.log('🔄 Refreshing complete search system');
+        
+        // Remove old listeners
+        this.removeSearchListeners();
+        
+        // Small delay to ensure cleanup is complete
+        setTimeout(() => {
+            // Re-setup listeners
+            this.setupSearchListeners();
+            
+            // Validate search input state
+            const searchInput = document.getElementById('menu-search');
+            if (searchInput) {
+                console.log('🔍 Search input validation:', {
+                    exists: !!searchInput,
+                    disabled: searchInput.disabled,
+                    readonly: searchInput.readOnly,
+                    value: searchInput.value,
+                    hasListeners: !!this.searchInputHandler
+                });
+                
+                // If there was an active search, re-run it with current menu data
+                if (searchInput.value.trim()) {
+                    const currentQuery = searchInput.value.trim();
+                    console.log('🔍 Re-executing active search:', currentQuery);
+                    this.performSearch(currentQuery);
+                }
+            }
+            
+            console.log('✅ Search system refresh complete');
+        }, 50);
     }
 
     populateCategories() {
@@ -896,7 +1087,7 @@ class POSApp {
         document.getElementById('disabled-count').textContent = `${disabledItems} disabled`;
     }
 
-    addNewMenuItem() {
+    async addNewMenuItem() {
         const form = document.getElementById('add-item-form');
         const formData = new FormData(form);
         
@@ -907,33 +1098,50 @@ class POSApp {
             return;
         }
 
-        // Create new menu item
-        const newItem = {
-            id: this.getNextMenuItemId(),
-            name: formData.get('name').trim(),
-            price: parseFloat(formData.get('price')),
-            category: formData.get('category'),
-            enabled: formData.get('enabled') === 'true'
-        };
+        try {
+            // Create new menu item
+            const newItem = {
+                id: this.getNextMenuItemId(),
+                name: formData.get('name').trim(),
+                price: parseFloat(formData.get('price')),
+                category: formData.get('category'),
+                enabled: formData.get('enabled') === 'true',
+                kotGroup: 'kitchen' // Default new items to kitchen group
+            };
 
-        // Add to menu items array
-        this.menuItems.push(newItem);
-        
-        // Clear form
-        this.clearAddItemForm();
-        
-        // Refresh display
-        this.populateCategories();
-        this.displayMenuItems();
-        this.updateMenuStats();
-        
-        // Show success message
-        this.showMessage(`✅ "${newItem.name}" added successfully!`, 'success');
-        
-        // Focus back on name field for quick adding
-        setTimeout(() => {
-            document.getElementById('item-name').focus();
-        }, 100);
+            // Add to menu items array
+            this.menuItems.push(newItem);
+            
+            // Immediately save changes to storage
+            await this.saveMenuChangesToStorage();
+            
+            // Clear form
+            this.clearAddItemForm();
+            
+            // Refresh display
+            this.populateCategories();
+            this.displayMenuItems();
+            this.updateMenuStats();
+            
+            // Show success message
+            this.showMessage(`✅ "${newItem.name}" added successfully!`, 'success');
+            
+            // Update billing screen menu if active
+            if (document.getElementById('billing-screen').classList.contains('active')) {
+                this.renderMenu();
+                // Also refresh search system to ensure it has updated data
+                this.refreshSearchSystem();
+            }
+            
+            // Focus back on name field for quick adding
+            setTimeout(() => {
+                document.getElementById('item-name').focus();
+            }, 100);
+            
+        } catch (error) {
+            console.error('Error adding new menu item:', error);
+            this.showMessage('❌ Failed to add item. Please try again.', 'error');
+        }
     }
 
     validateItemForm(formData, isEdit = false) {
@@ -1043,7 +1251,7 @@ class POSApp {
         }, 300);
     }
 
-    saveEditedItem() {
+    async saveEditedItem() {
         const form = document.getElementById('edit-item-form');
         const formData = new FormData(form);
         
@@ -1062,25 +1270,42 @@ class POSApp {
             return;
         }
 
-        // Update menu item
-        this.menuItems[itemIndex] = {
-            ...this.menuItems[itemIndex],
-            name: formData.get('name').trim(),
-            price: parseFloat(formData.get('price')),
-            category: formData.get('category'),
-            enabled: formData.get('enabled') === 'true'
-        };
+        try {
+            // Update menu item
+            this.menuItems[itemIndex] = {
+                ...this.menuItems[itemIndex],
+                name: formData.get('name').trim(),
+                price: parseFloat(formData.get('price')),
+                category: formData.get('category'),
+                enabled: formData.get('enabled') === 'true'
+                // kotGroup is preserved from the original item via spread operator
+            };
 
-        // Close edit modal
-        this.closeEditItemModal();
-        
-        // Refresh display
-        this.populateCategories();
-        this.displayMenuItems();
-        this.updateMenuStats();
-        
-        // Show success message
-        this.showMessage(`✅ "${this.menuItems[itemIndex].name}" updated successfully!`, 'success');
+            // Immediately save changes to storage
+            await this.saveMenuChangesToStorage();
+
+            // Close edit modal
+            this.closeEditItemModal();
+            
+            // Refresh display
+            this.populateCategories();
+            this.displayMenuItems();
+            this.updateMenuStats();
+            
+            // Show success message
+            this.showMessage(`✅ "${this.menuItems[itemIndex].name}" updated successfully!`, 'success');
+            
+            // Update billing screen menu if active
+            if (document.getElementById('billing-screen').classList.contains('active')) {
+                this.renderMenu();
+                // Also refresh search system to ensure it has updated data
+                this.refreshSearchSystem();
+            }
+            
+        } catch (error) {
+            console.error('Error saving edited item:', error);
+            this.showMessage('❌ Failed to save changes. Please try again.', 'error');
+        }
     }
 
     closeEditItemModal() {
@@ -1095,7 +1320,7 @@ class POSApp {
         });
     }
 
-    toggleMenuItem(itemId) {
+    async toggleMenuItem(itemId) {
         const itemIndex = this.menuItems.findIndex(item => item.id === itemId);
         if (itemIndex === -1) {
             this.showMessage('❌ Item not found', 'error');
@@ -1111,19 +1336,43 @@ class POSApp {
             return;
         }
 
-        // Update status
-        this.menuItems[itemIndex].enabled = newStatus;
-        
-        // Refresh display
-        this.displayMenuItems();
-        this.updateMenuStats();
-        
-        // Show success message
-        const statusText = newStatus ? 'enabled' : 'disabled';
-        this.showMessage(`✅ "${item.name}" ${statusText} successfully!`, 'success');
+        try {
+            // Update status
+            this.menuItems[itemIndex].enabled = newStatus;
+            
+            // Immediately save changes to storage
+            await this.saveMenuChangesToStorage();
+            
+            // Refresh display
+            this.displayMenuItems();
+            this.updateMenuStats();
+            
+            // Show success message
+            const statusText = newStatus ? 'enabled' : 'disabled';
+            this.showMessage(`✅ "${item.name}" ${statusText} successfully!`, 'success');
+            
+            // Update billing screen menu if active
+            if (document.getElementById('billing-screen').classList.contains('active')) {
+                this.renderMenu();
+                // Also refresh search system to ensure it has updated data
+                this.refreshSearchSystem();
+            }
+            
+            console.log('🔄 Menu item toggled - refreshing search data source');
+            console.log('📊 Current menuItems count:', this.menuItems.length);
+            console.log('📊 Enabled items count:', this.menuItems.filter(item => item.enabled !== false).length);
+            
+        } catch (error) {
+            console.error('Error toggling menu item:', error);
+            this.showMessage('❌ Failed to save changes. Please try again.', 'error');
+            // Revert the change
+            this.menuItems[itemIndex].enabled = !newStatus;
+            this.displayMenuItems();
+            this.updateMenuStats();
+        }
     }
 
-    deleteMenuItem(itemId) {
+    async deleteMenuItem(itemId) {
         const itemIndex = this.menuItems.findIndex(item => item.id === itemId);
         if (itemIndex === -1) {
             this.showMessage('❌ Item not found', 'error');
@@ -1137,16 +1386,34 @@ class POSApp {
             return;
         }
 
-        // Remove item
-        this.menuItems.splice(itemIndex, 1);
-        
-        // Refresh display
-        this.populateCategories();
-        this.displayMenuItems();
-        this.updateMenuStats();
-        
-        // Show success message
-        this.showMessage(`✅ "${item.name}" deleted successfully!`, 'success');
+        try {
+            // Remove item
+            this.menuItems.splice(itemIndex, 1);
+            
+            // Immediately save changes to storage
+            await this.saveMenuChangesToStorage();
+            
+            // Refresh display
+            this.populateCategories();
+            this.displayMenuItems();
+            this.updateMenuStats();
+            
+            // Show success message
+            this.showMessage(`✅ "${item.name}" deleted successfully!`, 'success');
+            
+            // Update billing screen menu if active
+            if (document.getElementById('billing-screen').classList.contains('active')) {
+                this.renderMenu();
+                // Also refresh search system to ensure it has updated data
+                this.refreshSearchSystem();
+            }
+            
+        } catch (error) {
+            console.error('Error deleting menu item:', error);
+            this.showMessage('❌ Failed to delete item. Please try again.', 'error');
+            // Note: We can't easily revert the deletion here, so we'll reload from storage
+            await this.reloadMenuItems();
+        }
     }
 
     async saveMenuChanges() {
@@ -1157,23 +1424,8 @@ class POSApp {
             saveButton.textContent = '💾 Saving...';
             saveButton.disabled = true;
 
-            // Prepare menu data for saving
-            const menuData = {
-                restaurant: this.settings.restaurant,
-                items: this.menuItems.map(item => ({
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    category: item.category,
-                    enabled: item.enabled !== false // Default to true if not set
-                }))
-            };
-
-            // Save to file
-            const fs = require('fs');
-            const menuPath = await dataPathManager.getMenuPath();
-            
-            fs.writeFileSync(menuPath, JSON.stringify(menuData, null, 2), 'utf8');
+            // Use the core save functionality
+            await this.saveMenuChangesToStorage();
             
             // Update the main menu display if we're on billing screen
             if (document.getElementById('billing-screen').classList.contains('active')) {
@@ -1205,6 +1457,29 @@ class POSApp {
                 saveButton.textContent = '💾 Save Changes';
             }, 3000);
         }
+    }
+
+    // Core save functionality - used by both manual save and automatic saves
+    async saveMenuChangesToStorage() {
+        // Prepare menu data for saving
+        const menuData = {
+            restaurant: this.settings.restaurant,
+            items: this.menuItems.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                category: item.category,
+                enabled: item.enabled !== false, // Default to true if not set
+                kotGroup: item.kotGroup || 'kitchen' // Ensure kotGroup is preserved
+            }))
+        };
+
+        // Save to file
+        const fs = require('fs');
+        const menuPath = await dataPathManager.getMenuPath();
+        
+        fs.writeFileSync(menuPath, JSON.stringify(menuData, null, 2), 'utf8');
+        console.log('✅ Menu changes saved to storage');
     }
 
     showMessage(message, type = 'info') {

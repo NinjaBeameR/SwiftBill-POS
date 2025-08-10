@@ -455,6 +455,8 @@ body {
     padding: 25px;
     overflow-y: auto;
     max-height: calc(90vh - 140px);
+    /* Ensure smooth scrolling for the entire modal body */
+    scroll-behavior: smooth;
 }
 
 .modal-footer {
@@ -474,6 +476,10 @@ body {
     padding: 20px;
     margin-bottom: 25px;
     border: 1px solid #e9ecef;
+    /* Ensure proper height distribution for scrollable content */
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Allow flex shrinking */
 }
 
 .menu-manager-section h3 {
@@ -483,6 +489,7 @@ body {
     font-weight: 600;
     border-bottom: 2px solid #dee2e6;
     padding-bottom: 8px;
+    flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 .section-header {
@@ -568,11 +575,36 @@ body {
 
 /* Menu Items List */
 .menu-items-list {
-    max-height: 400px;
+    max-height: calc(60vh - 200px); /* Dynamic height based on viewport */
+    min-height: 300px; /* Ensure minimum usable height */
     overflow-y: auto;
+    overflow-x: hidden; /* Prevent horizontal scroll */
     border: 1px solid #dee2e6;
     border-radius: 6px;
     background: white;
+    /* Enhanced scrollbar styling for better visibility */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 transparent;
+}
+
+/* Webkit scrollbar styling for better user experience */
+.menu-items-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.menu-items-list::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.menu-items-list::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.menu-items-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .menu-item-row {

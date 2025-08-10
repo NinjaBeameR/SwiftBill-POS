@@ -55,21 +55,21 @@ jobs:
         with:
           files: dist/*.exe
           body: |
-            ## 🚀 SwiftBill-POS ${{ github.ref_name }}
+            ## SwiftBill-POS ${{ github.ref_name }}
             
-            ### 📥 Manual Download
-            - **Installer**: Download `SwiftSetup.exe` for automatic installation
-            - **Portable**: Download `SwiftBill-POS-Portable-*.exe` for USB deployment
+            ### Manual Download
+            - **Installer**: Download SwiftSetup.exe for automatic installation
+            - **Portable**: Download SwiftBill-POS-Portable-*.exe for USB deployment
             
-            ### 🔄 Auto-Update
+            ### Auto-Update
             Existing users will be automatically notified of this update within their POS application.
             
-            ### 📋 To Update Manually
+            ### To Update Manually
             1. Download the appropriate installer/portable version
             2. Close your current POS application
             3. Run the new installer or replace the portable executable
             
-            ### 💾 System Requirements
+            ### System Requirements
             - Windows 7/8/10/11
             - .NET Framework 4.5 or higher
             - Thermal printer (optional)
@@ -83,6 +83,6 @@ jobs:
       - name: Notify completion
         if: success()
         run: |
-          echo "✅ Release ${{ github.ref_name }} created successfully!"
-          echo "🔗 Available at: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
-          echo "📱 Users can now manually download and install the update"
+          echo "Release ${{ github.ref_name }} created successfully!"
+          echo "Available at: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+          echo "Users can now manually download and install the update"
