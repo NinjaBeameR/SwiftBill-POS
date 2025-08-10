@@ -199,6 +199,40 @@ async function getInstallerInfo() {
 // Store current download state and metadata
 let currentDownload = null;
 
+// Get current app version
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion();
+});
+
+// Check for version updates without downloading
+ipcMain.handle('check-version', async () => {
+  try {
+    const currentVersion = app.getVersion();
+    const installerInfo = await getInstallerInfo();
+    
+    // Clean version strings for comparison (remove 'v' prefix if present)
+    const cleanCurrentVersion = currentVersion.replace(/^v/, '');
+    const cleanLatestVersion = installerInfo.version.replace(/^v/, '');
+    
+    console.log(`Version check: Current=${cleanCurrentVersion}, Latest=${cleanLatestVersion}`);
+    
+    return {
+      currentVersion: cleanCurrentVersion,
+      latestVersion: cleanLatestVersion,
+      hasUpdate: cleanCurrentVersion !== cleanLatestVersion,
+      installerInfo: installerInfo
+    };
+  } catch (error) {
+    console.error('Error checking version:', error);
+    return {
+      currentVersion: app.getVersion(),
+      latestVersion: 'unknown',
+      hasUpdate: false,
+      error: error.message
+    };
+  }
+});
+
 // Download update installer directly in app
 ipcMain.handle('download-update', async (event) => {
   try {

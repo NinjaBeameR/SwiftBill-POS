@@ -1931,3 +1931,22 @@ body {
         width: 100%;
     }
 }
+
+/* Version Display - Bottom Right Corner */
+.version-display {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    font-size: 11px;
+    color: #999;
+    opacity: 0.3;
+    font-family: 'Segoe UI', monospace;
+    pointer-events: none;
+    z-index: 1000;
+    user-select: none;
+    transition: opacity 0.3s ease;
+}
+
+.version-display:hover {
+    opacity: 0.7;
+}

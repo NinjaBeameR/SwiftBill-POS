@@ -73,6 +73,9 @@ class POSApp {
         // Download state management
         this.isDownloading = false;
         
+        // Initialize version display
+        this.initializeVersionDisplay();
+        
         // Settings for restaurant info
         this.settings = {
             restaurant: {
@@ -247,7 +250,7 @@ class POSApp {
         const updateBtn = document.getElementById('update-btn');
         if (updateBtn) {
             updateBtn.addEventListener('click', () => {
-                this.downloadLatestVersion();
+                this.checkForUpdates();
             });
         } else {
             console.error('Update button not found!');
@@ -3702,5 +3705,118 @@ class POSApp {
                 'and download SwiftSetup.exe manually.'
             );
         }
+    }
+
+    // Initialize version display
+    async initializeVersionDisplay() {
+        try {
+            const currentVersion = await ipcRenderer.invoke('get-app-version');
+            const versionDisplay = document.getElementById('version-display');
+            if (versionDisplay) {
+                versionDisplay.textContent = `v${currentVersion}`;
+                console.log(`Version display initialized: v${currentVersion}`);
+            } else {
+                console.warn('Version display element not found');
+            }
+        } catch (error) {
+            console.error('Failed to get app version:', error);
+            // Fallback to hardcoded version if IPC fails
+            const versionDisplay = document.getElementById('version-display');
+            if (versionDisplay) {
+                versionDisplay.textContent = 'v1.0.11';
+            }
+        }
+    }
+
+    // Check for updates with version comparison
+    async checkForUpdates() {
+        try {
+            console.log('🔄 Checking for updates...');
+            
+            // Show loading state on update button
+            const updateBtn = document.getElementById('update-btn');
+            const originalText = updateBtn.textContent;
+            updateBtn.textContent = '⟳';
+            updateBtn.disabled = true;
+
+            // Check version
+            const versionCheck = await ipcRenderer.invoke('check-version');
+            
+            console.log('Version check result:', versionCheck);
+            
+            // Reset button state
+            updateBtn.textContent = originalText;
+            updateBtn.disabled = false;
+
+            if (versionCheck.error) {
+                console.error('Version check error:', versionCheck.error);
+                alert(
+                    '❌ Version Check Failed\n\n' +
+                    'Could not check for updates. Please try again later.\n\n' +
+                    'Error: ' + versionCheck.error
+                );
+                return;
+            }
+
+            if (!versionCheck.hasUpdate) {
+                // Show "already latest" modal
+                console.log(`✅ Already on latest version: v${versionCheck.currentVersion}`);
+                this.showAlreadyLatestModal(versionCheck.currentVersion);
+            } else {
+                // Proceed with existing download flow
+                console.log(`🆕 Update available: v${versionCheck.currentVersion} → v${versionCheck.latestVersion}`);
+                this.downloadLatestVersion();
+            }
+        } catch (error) {
+            console.error('Error checking for updates:', error);
+            // Reset button state
+            const updateBtn = document.getElementById('update-btn');
+            updateBtn.textContent = '⟳';
+            updateBtn.disabled = false;
+            
+            alert(
+                '❌ Update Check Failed\n\n' +
+                'Could not check for updates. Please try again later.'
+            );
+        }
+    }
+
+    // Show modal when already on latest version
+    showAlreadyLatestModal(currentVersion) {
+        // Create a simple, non-intrusive modal
+        const existingModal = document.getElementById('already-latest-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'already-latest-modal';
+        modal.className = 'modal active';
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 400px; text-align: center;">
+                <h3 style="color: #4CAF50; margin-bottom: 15px;">✅ Up to Date</h3>
+                <p style="margin-bottom: 20px; color: #666;">
+                    You already have the latest version (v${currentVersion}).
+                </p>
+                <button id="close-already-latest" class="btn btn-primary" style="width: 100%;">
+                    OK
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Auto-close after 3 seconds or on button click
+        const closeBtn = document.getElementById('close-already-latest');
+        const closeModal = () => {
+            modal.classList.remove('active');
+            setTimeout(() => modal.remove(), 300);
+        };
+
+        closeBtn.addEventListener('click', closeModal);
+        
+        // Auto-close after 3 seconds
+        setTimeout(closeModal, 3000);
     }
 }
