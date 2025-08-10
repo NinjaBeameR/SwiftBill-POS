@@ -1,7 +1,0 @@
-provider: github
-owner: NinjaBeameR
-repo: SwiftBill-POS
-updaterCacheDirName: swiftbill-pos-updater
-# Force specific file patterns for development testing
-publisherName: 
-  - "NinjaBeameR"
