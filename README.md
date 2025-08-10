@@ -1,149 +1,119 @@
-# 🍽️ SwiftBill POS by NMD
-[THIS IS A AI GENERATED SOFTWARE BY NON TECH PERSON , EXPECT CERTAIN MISTAKES AND SOME LAME ROBOTIC STUFF]
-A professional Point of Sale system built with Electron for restaurant operations, featuring dual billing modes, thermal printing, and comprehensive menu management.
+🍽️ SwiftBill POS by NMD
+Disclaimer: This is an AI-generated software created by a non-technical person. Expect some robotic/lame bits here and there, and the occasional harmless mistake.
 
-## ✨ Features
+SwiftBill POS is a completely offline Point of Sale system designed for restaurant operations. It runs locally, requires no internet connection, and is tailored for fast, smooth billing with minimal fuss. Built with Electron, it combines thermal printing, menu management, and real-time order handling in a clean, touch-friendly interface.
 
-### 🏪 **Dual Billing Modes**
-- **Table Service** (14 tables) - Traditional dine-in billing
-- **Counter Billing** (6 counters) - Quick service with automatic ₹5 discount per item
+✨ Features
+🏪 Dual Billing Modes
+Table Service – Traditional dine-in billing for 14 tables
 
-### 🖨️ **Professional Printing**
-- **Silent Printing** - Automatic thermal printer detection
-- **KOT (Kitchen Order Ticket)** - Item names and quantities for kitchen
-- **Customer Bills** - Professional receipts with business details
-- **8cm Thermal Paper** optimized formatting
+Counter Billing – Quick service for 6 counters with automatic ₹5 discount per item
 
-### 🔍 **Smart Search**
-- Real-time menu item search with keyboard navigation
-- Arrow key navigation (↑/↓) and Enter to select
-- Quick search shortcuts (`/` key or `F3`)
-- Highlighted search results
+🖨️ Professional Thermal Printing
+Silent printing with automatic printer detection
 
-### 📱 **User Interface**
-- Clean, responsive design optimized for touch screens
-- Visual table/counter status indicators
-- Real-time order management
-- Professional service selector
+KOT (Kitchen Order Ticket) – Sends only items & quantities to the kitchen
 
-## 🛠️ Technology Stack
+Customer Bills – Professional receipts with business details
 
-- **Electron** - Desktop application framework
-- **Vanilla JavaScript** - No external UI frameworks for optimal performance
-- **CSS Grid & Flexbox** - Responsive layouts
-- **Local Storage** - Order persistence
-- **Node.js** - File system operations
+Optimized for 80mm (8cm) thermal paper
 
-## 📁 Project Structure
+🔍 Smart Search
+Real-time menu search with keyboard shortcuts
 
-```
+Arrow key navigation (↑/↓) and Enter to select
+
+Quick search keys: / or F3
+
+Highlights matching results
+
+📱 Clean Offline Interface
+Touch-optimized design
+
+Visual table/counter status
+
+Real-time order tracking
+
+Smooth menu management
+
+🛠️ Tech Stack
+Electron – Desktop app framework
+
+Vanilla JavaScript – Lightweight & fast
+
+CSS Grid & Flexbox – Responsive layouts
+
+Local Storage – Fully offline data persistence
+
+Node.js – File handling
+
+📁 Project Structure
+bash
+Copy
+Edit
 ├── main.js                 # Electron main process
-├── renderer.js             # UI logic and components
-├── index.html              # Application layout
-├── package.json            # Dependencies and scripts
+├── renderer.js             # UI logic
+├── index.html              # App layout
+├── package.json            # Config & scripts
 ├── src/
-│   ├── components/         # UI components (future modularization)
-│   ├── storage/           # Data files
-│   │   ├── menu.json      # 193 menu items with categories
-│   │   └── orders.json    # Order tracking
-│   └── utils/             # Utility functions
-├── styles/                # CSS stylesheets
-│   ├── main.css          # Main layout styles
-│   └── billing.css       # Billing screen styles
-└── .github/
-    └── copilot-instructions.md  # Development guidelines
-```
+│   ├── components/         # UI parts
+│   ├── storage/            # menu.json, orders.json
+│   └── utils/              # Helpers
+├── styles/                 # CSS
+└── .github/                # Copilot instructions
+🚀 Quick Start
+Requirements
+Node.js v14+
 
-## 🚀 Quick Start
+npm or yarn
 
-### Prerequisites
-- Node.js (v14 or higher)
-- npm or yarn package manager
+Installation
+bash
+Copy
+Edit
+git clone https://github.com/NinjaBeameR/SwiftBill-POS.git
+cd swiftbill-pos-system
+npm install
+npm start
+⌨️ Shortcuts
+Key	Action
+Escape	Back / Exit screen
+F1 / F2	Print order (KOT + Bill)
+F3	Focus search bar
+/	Quick search
+↑ / ↓	Navigate results
+Enter	Select highlighted item
 
-### Installation
+🖨️ Print Details
+Works with USB, Network, Bluetooth thermal printers
 
-1. **Clone the repository**
-   ```bash
-   https://github.com/NinjaBeameR/SwiftBill-POS.git
-   cd swiftbill-pos-system
-   ```
+203 DPI resolution for crisp printing
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+Silent printing with automatic detection
 
-3. **Start the application**
-   ```bash
-   npm start
-   ```
+🔧 Development Notes
+Modular, clean code style
 
-## ⌨️ Keyboard Shortcuts
+Error handling in place
 
-| Key | Action |
-|-----|--------|
-| `Escape` | Navigate back/exit current screen |
-| `F1` / `F2` | Print order (KOT + Bill) |
-| `F3` | Focus search bar |
-| `F4` | Test printer functionality |
-| `/` | Quick search shortcut |
-| `↑` / `↓` | Navigate search results |
-| `Enter` | Select highlighted item |
+camelCase convention
 
-## 🖨️ Print Configuration
+Commented for maintainability (yes, sometimes even the comments sound AI-ish 😄)
 
-### Supported Printers
-- Thermal receipt printers (80mm width)
-- USB, Network, and Bluetooth printers
-- Generic POS printers
+📌 Future Ideas
+User login
 
-### Print Settings
-- **Silent printing** with automatic printer detection
-- **203 DPI** resolution for thermal printers
-- **Enhanced fonts** (16px base) for better readability
-- **Professional formatting** with proper margins
+Sales reports
 
-## 🔧 Development
+Inventory tracking
 
-### Code Style Guidelines
-- Modular class-based components
-- Consistent error handling
-- camelCase naming convention
-- Comprehensive commenting
+Multi-restaurant support
 
-### Future Enhancements
-- [ ] User authentication system
-- [ ] Sales reporting and analytics
-- [ ] Inventory management
-- [ ] Multiple restaurant support
-- [ ] Cloud synchronization
-- [ ] Mobile app companion
+Cloud sync (optional)
 
-## 📄 License
+Mobile app
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+📄 License
+MIT License – see LICENSE file
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📞 Support
-
-For support and questions:
-- Create an issue in this repository
-- Email: [your-email@example.com]
-
-## 🙏 Acknowledgments
-
-- Built with Electron framework
-- Designed for restaurant operations
-- Optimized for thermal printing
-- Powered by NMD
-
----
-
-**Made with ❤️ for the restaurant industry**
+Made with ❤️ + 🤖 by NMD — for restaurants that just want billing to work, offline and fast.

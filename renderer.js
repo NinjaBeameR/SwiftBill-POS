@@ -3,6 +3,16 @@ const { ipcRenderer } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
+// ===== FEATURE FLAGS =====
+const ENABLE_COUNTERS = false; // Set to true to re-enable counter functionality
+// 
+// To re-enable counters: 
+// 1. Change ENABLE_COUNTERS to true
+// 2. All counter functionality will be automatically restored
+// 3. All existing counter data and orders are preserved
+// 4. UI elements will be shown and functional again
+// =========================
+
 // Data path management for both development and production
 class DataPathManager {
     constructor() {
@@ -106,6 +116,9 @@ class POSApp {
         this.updateDateTime();
         setInterval(() => this.updateDateTime(), 1000);
         
+        // Apply feature flags
+        this.applyFeatureFlags();
+        
         // Load service selector by default
         this.showServiceSelector();
     }
@@ -120,10 +133,18 @@ class POSApp {
 
     initCounterSelector() {
         // Inline counter selector functionality
+        // Initialize counter data even when disabled to preserve existing data
         this.totalCounters = 6;
         this.activeCounters = new Set();
-        this.loadActiveCounterData();
-        this.refreshActiveCounters(); // Check all counters for active orders
+        
+        if (ENABLE_COUNTERS) {
+            this.loadActiveCounterData();
+            this.refreshActiveCounters(); // Check all counters for active orders
+        } else {
+            // Still load data to preserve existing counter orders but don't refresh UI
+            this.loadActiveCounterData();
+            console.log('🔒 Counter data loaded but UI disabled by feature flag');
+        }
     }
 
     initBillingScreen() {
@@ -265,7 +286,12 @@ class POSApp {
         });
 
         document.getElementById('counter-service-btn').addEventListener('click', () => {
-            this.showCounterSelector();
+            if (ENABLE_COUNTERS) {
+                this.showCounterSelector();
+            } else {
+                console.log('🔒 Counter service disabled by feature flag');
+                alert('Counter service is temporarily disabled. Please use Table Service.');
+            }
         });
 
         // Back buttons
@@ -274,14 +300,22 @@ class POSApp {
         });
 
         document.getElementById('back-to-service-counter').addEventListener('click', () => {
-            this.showServiceSelector();
+            if (ENABLE_COUNTERS) {
+                this.showServiceSelector();
+            } else {
+                // If counters are disabled, redirect to table selector instead
+                this.showTableSelector();
+            }
         });
 
         document.getElementById('back-to-tables').addEventListener('click', () => {
             if (this.billingMode === 'table') {
                 this.showTableSelector();
-            } else {
+            } else if (ENABLE_COUNTERS) {
                 this.showCounterSelector();
+            } else {
+                // If counters are disabled, always go to table selector
+                this.showTableSelector();
             }
         });
 
@@ -352,8 +386,11 @@ class POSApp {
                     case 'Escape':
                         if (this.billingMode === 'table') {
                             this.showTableSelector();
-                        } else {
+                        } else if (ENABLE_COUNTERS) {
                             this.showCounterSelector();
+                        } else {
+                            // If counters are disabled, always go to table selector
+                            this.showTableSelector();
                         }
                         break;
                     case 'F1':
@@ -1645,6 +1682,29 @@ class POSApp {
         document.getElementById('current-time').textContent = now.toLocaleTimeString('en-IN', timeOptions);
     }
 
+    applyFeatureFlags() {
+        // Apply counter feature flag
+        if (!ENABLE_COUNTERS) {
+            console.log('🔒 Counter functionality disabled by feature flag');
+            
+            // Hide counter service button in UI
+            const counterServiceBtn = document.getElementById('counter-service-btn');
+            if (counterServiceBtn) {
+                counterServiceBtn.style.display = 'none';
+                console.log('✅ Counter service button hidden');
+            }
+            
+            // Hide counter selector screen
+            const counterSelectorScreen = document.getElementById('counter-selector-screen');
+            if (counterSelectorScreen) {
+                counterSelectorScreen.style.display = 'none';
+                console.log('✅ Counter selector screen hidden');
+            }
+        } else {
+            console.log('✅ Counter functionality enabled');
+        }
+    }
+
     onTableSelect(tableNumber) {
         this.currentTable = tableNumber;
         this.currentLocation = tableNumber;
@@ -1653,6 +1713,13 @@ class POSApp {
     }
 
     onCounterSelect(counterNumber) {
+        if (!ENABLE_COUNTERS) {
+            console.log('🔒 Counter selection blocked by feature flag');
+            alert('Counter service is temporarily disabled. Please use Table Service.');
+            this.showTableSelector();
+            return;
+        }
+        
         this.currentCounter = counterNumber;
         this.currentLocation = counterNumber;
         this.billingMode = 'counter';
@@ -1677,6 +1744,12 @@ class POSApp {
     }
 
     showCounterSelector() {
+        if (!ENABLE_COUNTERS) {
+            console.log('🔒 Counter selector blocked by feature flag - redirecting to table selector');
+            this.showTableSelector();
+            return;
+        }
+        
         document.getElementById('service-selector-screen').classList.remove('active');
         document.getElementById('table-selector-screen').classList.remove('active');
         document.getElementById('counter-selector-screen').classList.add('active');
@@ -1703,10 +1776,16 @@ class POSApp {
             document.getElementById('current-location').textContent = `Table ${this.currentLocation}`;
             document.getElementById('billing-mode-text').textContent = 'Table Service';
             document.getElementById('back-to-tables').textContent = '← Back to Tables';
-        } else {
+        } else if (this.billingMode === 'counter' && ENABLE_COUNTERS) {
             document.getElementById('current-location').textContent = `Counter ${this.currentLocation}`;
             document.getElementById('billing-mode-text').textContent = 'Counter Billing';
             document.getElementById('back-to-tables').textContent = '← Back to Counters';
+        } else {
+            // Fallback to table mode if counters are disabled or invalid billing mode
+            console.log('🔒 Invalid billing mode or counters disabled - defaulting to table mode');
+            document.getElementById('current-location').textContent = `Table Service`;
+            document.getElementById('billing-mode-text').textContent = 'Table Service';
+            document.getElementById('back-to-tables').textContent = '← Back to Tables';
         }
         
         // Ensure menu items are loaded
