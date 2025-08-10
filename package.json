@@ -1,6 +1,6 @@
 {
   "name": "swiftbill-pos",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Restaurant POS Billing Software",
   "main": "main.js",
   "repository": {
