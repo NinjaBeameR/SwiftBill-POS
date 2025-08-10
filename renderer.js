@@ -42,50 +42,19 @@ class DataPathManager {
 // Global data path manager instance
 const dataPathManager = new DataPathManager();
 
-// Load Auto-Update UI Handler
-const autoUpdateUIPath = './src/utils/autoUpdateUI.js';
-let AutoUpdateUI;
-try {
-    AutoUpdateUI = require(autoUpdateUIPath);
-} catch (error) {
-    console.warn('AutoUpdateUI not available:', error.message);
-}
-
 // Wait for DOM to load and then initialize
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Renderer: DOM content loaded, initializing...');
     
-    // Test IPC communication right away
-    try {
-        const { ipcRenderer } = require('electron');
-        console.log('Renderer: ipcRenderer available, setting up test listener');
-        
-        // Listen for all auto-update events for debugging
-        ipcRenderer.on('auto-update-event', (event, data) => {
-            console.log('Renderer: Received auto-update-event!');
-            console.log('Renderer: Event data:', JSON.stringify(data, null, 2));
-        });
-        
-        console.log('Renderer: Test IPC listener set up successfully');
-    } catch (error) {
-        console.error('Renderer: Failed to set up test IPC listener:', error);
-    }
-    
     // Initialize the POS app
     console.log('Renderer: Initializing POS app...');
     window.posApp = new POSApp();
-    console.log('Renderer: POS app initialized');
     
-    // Initialize auto-update UI after a short delay
-    if (AutoUpdateUI) {
-        setTimeout(() => {
-            console.log('Renderer: Initializing AutoUpdateUI...');
-            window.autoUpdateUI = new AutoUpdateUI();
-            console.log('Renderer: AutoUpdateUI initialized and ready');
-        }, 2000);
-    } else {
-        console.error('Renderer: AutoUpdateUI class not available!');
-    }
+    // Wait a moment for DOM to be fully ready, then initialize
+    setTimeout(() => {
+        window.posApp.init();
+        console.log('Renderer: POS app fully initialized');
+    }, 100);
 });
 
 class POSApp {
@@ -101,6 +70,9 @@ class POSApp {
         this.currentSearchResults = [];
         this.selectedSearchIndex = -1;
         
+        // Download state management
+        this.isDownloading = false;
+        
         // Settings for restaurant info
         this.settings = {
             restaurant: {
@@ -112,7 +84,7 @@ class POSApp {
             }
         };
         
-        this.init();
+        // Don't call init() here - it will be called after DOM is ready
     }
 
     init() {
@@ -271,6 +243,16 @@ class POSApp {
     }
 
     setupEventListeners() {
+        // Update button
+        const updateBtn = document.getElementById('update-btn');
+        if (updateBtn) {
+            updateBtn.addEventListener('click', () => {
+                this.downloadLatestVersion();
+            });
+        } else {
+            console.error('Update button not found!');
+        }
+
         // Service type selection
         document.getElementById('table-service-btn').addEventListener('click', () => {
             this.showTableSelector();
@@ -360,6 +342,9 @@ class POSApp {
 
         // MenuManager modal event listeners
         this.setupMenuManagerListeners();
+        
+        // Update modal event listeners
+        this.setupUpdateModalListeners();
     }
 
     setupSearchListeners() {
@@ -738,6 +723,15 @@ class POSApp {
 
         document.getElementById('reset-restaurant-settings').addEventListener('click', () => {
             this.resetRestaurantSettings();
+        });
+    }
+
+    setupUpdateModalListeners() {
+        // Close modal on background click
+        document.getElementById('update-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'update-modal') {
+                document.getElementById('update-modal').classList.remove('active');
+            }
         });
     }
 
@@ -3482,5 +3476,231 @@ class POSApp {
             </body>
             </html>
         `;
+    }
+
+    // Enhanced manual update system
+    async downloadLatestVersion() {
+        // Prevent multiple simultaneous downloads
+        if (this.isDownloading) {
+            console.log('Download already in progress, ignoring click');
+            return;
+        }
+        
+        const modal = document.getElementById('update-modal');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const downloadStatus = document.getElementById('download-status');
+        const downloadSize = document.getElementById('download-size');
+        const postDownloadActions = document.getElementById('post-download-actions');
+        const cancelBtn = document.getElementById('cancel-download');
+        const runInstallerBtn = document.getElementById('run-installer');
+        const showInFolderBtn = document.getElementById('show-in-folder');
+        
+        // Check if modal exists
+        if (!modal) {
+            console.error('Update modal not found!');
+            alert('Error: Update interface not available. Please refresh the page.');
+            return;
+        }
+        
+        let downloadedFilePath = null;
+        
+        try {
+            // Set download state
+            this.isDownloading = true;
+            
+            // Show modal using existing pattern
+            modal.classList.add('active');
+            
+            // Reset UI
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+            downloadStatus.textContent = 'Preparing download...';
+            downloadSize.textContent = '';
+            postDownloadActions.style.display = 'none';
+            
+            // Listen for progress updates
+            const progressListener = (event, data) => {
+                progressBar.style.width = data.progress + '%';
+                progressText.textContent = data.progress + '%';
+                downloadStatus.textContent = 'Downloading...';
+                
+                if (data.totalSize > 0) {
+                    const totalMB = (data.totalSize / 1024 / 1024).toFixed(1);
+                    const downloadedMB = (data.downloadedSize / 1024 / 1024).toFixed(1);
+                    downloadSize.textContent = `${downloadedMB} MB / ${totalMB} MB`;
+                }
+            };
+            
+            ipcRenderer.on('download-progress', progressListener);
+            
+            // Handle cancel button
+            const cancelHandler = async () => {
+                try {
+                    await ipcRenderer.invoke('cancel-download');
+                    modal.classList.remove('active');
+                    ipcRenderer.removeListener('download-progress', progressListener);
+                } catch (error) {
+                    console.error('Error cancelling download:', error);
+                } finally {
+                    // Always reset download state
+                    this.isDownloading = false;
+                }
+            };
+            
+            cancelBtn.onclick = cancelHandler;
+            
+            // Start download
+            const result = await ipcRenderer.invoke('download-update');
+            
+            // Remove progress listener
+            ipcRenderer.removeListener('download-progress', progressListener);
+            
+            if (result.success) {
+                downloadedFilePath = result.filePath;
+                
+                // Show completion UI
+                downloadStatus.textContent = 'Download completed!';
+                progressBar.style.width = '100%';
+                progressText.textContent = '100%';
+                postDownloadActions.style.display = 'block';
+                
+                // Handle run installer
+                runInstallerBtn.onclick = async () => {
+                    const confirmed = confirm(
+                        '🚀 Run Installer\n\n' +
+                        'The application will close and the installer will start.\n' +
+                        'Your data will be preserved during the update.\n\n' +
+                        'Continue?'
+                    );
+                    
+                    if (confirmed) {
+                        try {
+                            const result = await ipcRenderer.invoke('run-installer', downloadedFilePath);
+                            
+                            if (!result.success) {
+                                // Show detailed error message
+                                alert(
+                                    '❌ Installer Launch Failed\n\n' +
+                                    result.error + '\n\n' +
+                                    'Troubleshooting tips:\n' +
+                                    '• Right-click the installer → "Run as administrator"\n' +
+                                    '• Check Windows Defender/antivirus settings\n' +
+                                    '• If file is blocked: Right-click → Properties → Unblock\n\n' +
+                                    'File location: ' + (result.filePath || 'Unknown')
+                                );
+                            } else {
+                                console.log('Installer launched successfully via:', result.method);
+                            }
+                        } catch (error) {
+                            console.error('Error running installer:', error);
+                            alert(
+                                '❌ Error\n\n' +
+                                'Failed to run installer: ' + error.message + '\n\n' +
+                                'Please try running the installer manually from the downloads folder.'
+                            );
+                        }
+                    }
+                };
+                
+                // Handle show in folder
+                showInFolderBtn.onclick = async () => {
+                    try {
+                        await ipcRenderer.invoke('show-in-folder', downloadedFilePath);
+                    } catch (error) {
+                        console.error('Error showing in folder:', error);
+                        alert('❌ Error\n\nCould not open folder. Please check your downloads manually.');
+                    }
+                };
+                
+            } else {
+                // Download failed
+                downloadStatus.textContent = 'Download failed!';
+                progressBar.style.width = '0%';
+                progressText.textContent = 'Error';
+                
+                setTimeout(() => {
+                    modal.classList.remove('active');
+                    // Reset download state
+                    this.isDownloading = false;
+                    
+                    // Fallback to browser download
+                    const retry = confirm(
+                        '❌ Download Failed\n\n' +
+                        'The in-app download failed. Would you like to download manually from the browser instead?'
+                    );
+                    
+                    if (retry) {
+                        this.fallbackDownload();
+                    }
+                }, 2000);
+            }
+            
+        } catch (error) {
+            console.error('Download error:', error);
+            modal.classList.remove('active');
+            
+            // Reset download state
+            this.isDownloading = false;
+            
+            // Fallback to browser download
+            const retry = confirm(
+                '❌ Download Error\n\n' +
+                'An error occurred during download. Would you like to download manually from the browser instead?'
+            );
+            
+            if (retry) {
+                this.fallbackDownload();
+            }
+        } finally {
+            // Ensure download state is always reset
+            this.isDownloading = false;
+        }
+    }
+    
+    // Fallback to browser download (original method)
+    async fallbackDownload() {
+        try {
+            const userConfirmed = confirm(
+                '📥 Download Latest Version\n\n' +
+                'This will open the download page for the latest version of SwiftBill-POS.\n\n' +
+                'After downloading:\n' +
+                '• Close this application\n' +
+                '• Run the installer (SwiftSetup.exe)\n' +
+                '• Follow the installation prompts\n\n' +
+                'Do you want to continue?'
+            );
+            
+            if (userConfirmed) {
+                const result = await ipcRenderer.invoke('open-latest-release');
+                
+                if (result.success) {
+                    alert(
+                        '✅ Download Started!\n\n' +
+                        'The download page has been opened in your browser.\n\n' +
+                        'Instructions:\n' +
+                        '1. Download SwiftSetup.exe from the opened page\n' +
+                        '2. Close this application\n' +
+                        '3. Run the downloaded installer\n' +
+                        '4. Your data will be preserved during the update'
+                    );
+                } else {
+                    await ipcRenderer.invoke('open-release-page');
+                    alert(
+                        '📋 Release Page Opened\n\n' +
+                        'The GitHub releases page has been opened.\n' +
+                        'Download SwiftSetup.exe and run it to update.'
+                    );
+                }
+            }
+        } catch (error) {
+            console.error('Failed to open download page:', error);
+            alert(
+                '❌ Error\n\n' +
+                'Could not open the download page.\n' +
+                'Please visit: https://github.com/NinjaBeameR/SwiftBill-POS/releases/latest\n' +
+                'and download SwiftSetup.exe manually.'
+            );
+        }
     }
 }

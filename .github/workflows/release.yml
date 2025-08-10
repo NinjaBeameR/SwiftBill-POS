@@ -11,12 +11,13 @@ permissions:
   actions: read
 
 env:
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  ELECTRON_CACHE: ${{ github.workspace }}/.cache/electron
+  ELECTRON_BUILDER_CACHE: ${{ github.workspace }}/.cache/electron-builder
 
 jobs:
   release:
     runs-on: windows-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,9 +29,7 @@ jobs:
           cache: 'npm'
           
       - name: Install dependencies
-        run: |
-          npm ci
-          npm list electron-updater || echo "electron-updater not found in dependencies"
+        run: npm ci
         
       - name: Build application
         run: |
@@ -48,38 +47,29 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: swiftbill-pos-build-${{ github.ref_name }}
-          path: |
-            dist/*.exe
-            dist/latest.yml
-            dist/*.yml
+          path: dist/*.exe
             
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: |
-            dist/*.exe
-            dist/latest.yml
-            dist/*.blockmap
+          files: dist/*.exe
           body: |
             ## 🚀 SwiftBill-POS ${{ github.ref_name }}
             
-            ### � Download Options:
+            ### 📥 Manual Download
             - **Installer**: Download `SwiftSetup.exe` for automatic installation
             - **Portable**: Download `SwiftBill-POS-Portable-*.exe` for USB deployment
             
-            ### 🔄 Auto-Update
-            Existing users will be automatically notified of this update within their POS application.
+            To update your application:
+            1. Download the appropriate installer/portable version
+            2. Close your current POS application
+            3. Run the new installer or replace the portable executable
             
             ### 💾 System Requirements
             - Windows 7/8/10/11
             - .NET Framework 4.5 or higher
             - Thermal printer (optional)
-            
-            ### 🐛 Bug Fixes (v1.0.7)
-            - Fixed "Cannot find module 'electron-updater'" error in packaged applications
-            - Improved build configuration for better dependency inclusion
-            - Enhanced error handling for auto-updater functionality
             
             **Full Changelog**: https://github.com/${{ github.repository }}/compare/v1.0.6...${{ github.ref_name }}
           generate_release_notes: false
@@ -92,4 +82,4 @@ jobs:
         run: |
           echo "✅ Release ${{ github.ref_name }} created successfully!"
           echo "🔗 Available at: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
-          echo "📱 Auto-updater will notify existing users automatically"
+          echo "📱 Users can now manually download and install the update"

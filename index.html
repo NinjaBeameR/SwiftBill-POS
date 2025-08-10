@@ -15,6 +15,9 @@
             <div class="header-info">
                 <span id="current-date"></span>
                 <span id="current-time"></span>
+                <button id="update-btn" class="btn-icon" title="Check for Updates">
+                    ⟳
+                </button>
             </div>
         </header>
 
@@ -298,6 +301,37 @@
                 <div class="modal-footer">
                     <button id="cancel-edit" class="btn btn-secondary">❌ Cancel</button>
                     <button id="save-edit" class="btn btn-success">✅ Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Download Modal -->
+    <div id="update-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📥 Downloading Update</h2>
+                <button id="cancel-download" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="download-progress">
+                    <div class="progress-bar-container">
+                        <div id="progress-bar" class="progress-bar"></div>
+                        <span id="progress-text">0%</span>
+                    </div>
+                    <div class="download-info">
+                        <span id="download-status">Preparing download...</span>
+                        <span id="download-size"></span>
+                    </div>
+                </div>
+                
+                <!-- Post-download actions (hidden initially) -->
+                <div id="post-download-actions" class="post-download-actions" style="display: none;">
+                    <p>✅ Download completed successfully!</p>
+                    <div class="action-buttons">
+                        <button id="run-installer" class="btn btn-success">🚀 Run Installer</button>
+                        <button id="show-in-folder" class="btn btn-secondary">📁 Show in Folder</button>
+                    </div>
                 </div>
             </div>
         </div>

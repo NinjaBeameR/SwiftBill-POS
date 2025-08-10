@@ -34,10 +34,39 @@ body {
     font-weight: 600;
 }
 
+.header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
 .header-info {
     display: flex;
     gap: 20px;
+    align-items: center;
     font-size: 0.9rem;
+}
+
+/* Update Button Styles */
+.btn-icon {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    margin-left: 10px;
+}
+
+.btn-icon:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.btn-icon:active {
+    transform: scale(0.95);
 }
 
 /* Main Content */
@@ -281,6 +310,20 @@ body {
 
 .btn-success:hover {
     background: #218838;
+}
+
+.btn-outline {
+    background: transparent;
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+.btn-outline:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: white;
+    color: white;
 }
 
 /* Responsive Design */
@@ -1769,5 +1812,122 @@ body {
     .update-actions .btn {
         font-size: 0.8rem;
         padding: 4px 8px;
+    }
+}
+
+/* Update Modal Styles */
+.update-modal {
+    max-width: 500px;
+    width: 90%;
+}
+
+.download-progress {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.progress-bar-container {
+    position: relative;
+    width: 100%;
+    height: 25px;
+    background-color: #f3f4f6;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    border: 1px solid #e5e7eb;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    border-radius: 12px;
+    transition: width 0.3s ease;
+    width: 0%;
+    position: relative;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    animation: progressShine 2s infinite;
+}
+
+@keyframes progressShine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+#progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9rem;
+    z-index: 1;
+}
+
+.download-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.post-download-actions {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.post-download-actions p {
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    color: #059669;
+    font-weight: 600;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-close:hover {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+/* Responsive Updates */
+@media (max-width: 768px) {
+    .update-modal {
+        margin: 20px;
+        max-width: none;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
     }
 }

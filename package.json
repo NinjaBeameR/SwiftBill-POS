@@ -45,17 +45,11 @@
     "electron-builder": "^24.13.3",
     "electron-packager": "^17.1.2"
   },
-  "dependencies": {
-    "electron-updater": "^6.6.2"
-  },
   "build": {
     "appId": "com.swiftbillpos.restaurant",
     "productName": "SwiftBill-POS",
     "copyright": "Copyright © 2025 NMD",
     "includeSubNodeModules": true,
-    "asarUnpack": [
-      "node_modules/electron-updater/**/*"
-    ],
     "directories": {
       "output": "dist",
       "buildResources": "build"
