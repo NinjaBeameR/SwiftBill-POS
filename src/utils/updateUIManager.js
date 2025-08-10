@@ -489,17 +489,6 @@ class UpdateUIManager {
         }
     }
 
-    // Test methods for development/debugging
-    async testUpdateScenario(scenario) {
-        if (typeof ipcRenderer !== 'undefined') {
-            const result = await ipcRenderer.invoke('test-update-scenario', scenario);
-            console.log('UpdateUIManager: Test scenario result:', result);
-            return result;
-        }
-        return { success: false, error: 'IPC not available' };
-    }
-
-    // Clear dismissed updates for testing
     clearDismissedUpdates() {
         this.dismissedUpdates.clear();
         this.saveDismissedUpdates();

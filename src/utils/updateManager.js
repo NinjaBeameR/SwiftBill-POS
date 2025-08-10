@@ -245,28 +245,6 @@ class UpdateManager {
         };
     }
 
-    // Test method to simulate update scenarios (for development/testing only)
-    simulateUpdateScenario(scenario) {
-        if (scenario === 'update-available') {
-            const mockUpdateInfo = {
-                version: '1.0.3',
-                releaseDate: new Date().toISOString(),
-                releaseName: 'Version 1.0.3',
-                releaseNotes: 'Test update for debugging purposes'
-            };
-            
-            this.updateAvailable = true;
-            this.updateInfo = mockUpdateInfo;
-            this.notifyRenderer('update-available', mockUpdateInfo);
-            console.log('UpdateManager: Simulated update-available event');
-        } else if (scenario === 'no-update') {
-            this.updateAvailable = false;
-            this.updateInfo = null;
-            this.notifyRenderer('update-not-available');
-            console.log('UpdateManager: Simulated update-not-available event');
-        }
-    }
-
     // Notify renderer process of update events
     notifyRenderer(event, data = {}) {
         if (this.mainWindow && !this.mainWindow.isDestroyed()) {

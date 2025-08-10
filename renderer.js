@@ -82,104 +82,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('Renderer: Initializing AutoUpdateUI...');
             window.autoUpdateUI = new AutoUpdateUI();
             console.log('Renderer: AutoUpdateUI initialized and ready');
-            
-            // Test the connection
-            setTimeout(() => {
-                console.log('Renderer: Testing AutoUpdateUI connection...');
-                if (window.autoUpdateUI && window.autoUpdateUI.getUpdateStatus) {
-                    window.autoUpdateUI.getUpdateStatus()
-                        .then(result => console.log('Renderer: Update status test result:', result))
-                        .catch(error => console.error('Renderer: Update status test failed:', error));
-                }
-            }, 3000);
         }, 2000);
     } else {
         console.error('Renderer: AutoUpdateUI class not available!');
     }
-    
-    // Add debug buttons for testing
-    setTimeout(() => {
-        console.log('Renderer: Adding debug test buttons');
-        addDebugTestButtons();
-    }, 5000);
 });
-
-// Debug test buttons for functionality testing
-function addDebugTestButtons() {
-    const debugPanel = document.createElement('div');
-    debugPanel.id = 'debug-test-panel';
-    debugPanel.style.cssText = `
-        position: fixed;
-        bottom: 10px;
-        right: 10px;
-        background: #f0f0f0;
-        border: 1px solid #ccc;
-        padding: 10px;
-        border-radius: 5px;
-        z-index: 10001;
-        font-size: 12px;
-    `;
-    
-    debugPanel.innerHTML = `
-        <strong>Debug Tests</strong><br>
-        <button onclick="testUpdateCheck()" style="margin: 2px;">Test Update Check</button><br>
-        <button onclick="testMenuSearch()" style="margin: 2px;">Test Menu Search</button><br>
-        <button onclick="showUpdateNotification()" style="margin: 2px;">Show Update UI</button><br>
-        <button onclick="clearDebugLogs()" style="margin: 2px;">Clear Console</button>
-    `;
-    
-    document.body.appendChild(debugPanel);
-    console.log('Renderer: Debug test panel added');
-}
-
-// Test functions
-window.testUpdateCheck = async function() {
-    console.log('Debug: Testing manual update check...');
-    if (window.autoUpdateUI && window.autoUpdateUI.manualCheckForUpdates) {
-        try {
-            const result = await window.autoUpdateUI.manualCheckForUpdates();
-            console.log('Debug: Manual update check result:', result);
-        } catch (error) {
-            console.error('Debug: Manual update check failed:', error);
-        }
-    } else {
-        console.error('Debug: AutoUpdateUI not available for manual check');
-    }
-};
-
-window.testMenuSearch = function() {
-    console.log('Debug: Testing menu search...');
-    if (window.posApp && window.posApp.performSearch) {
-        window.posApp.performSearch('test');
-        console.log('Debug: Menu search test executed');
-    } else {
-        console.error('Debug: POS app not available for search test');
-    }
-};
-
-window.showUpdateNotification = function() {
-    console.log('Debug: Testing update notification display...');
-    if (window.autoUpdateUI) {
-        // Simulate an update available event
-        const mockUpdateInfo = {
-            version: '1.0.5',
-            releaseName: 'Test Update v1.0.5',
-            releaseDate: new Date().toISOString(),
-            releaseNotes: 'This is a test update notification.',
-            releaseUrl: 'https://github.com/NinjaBeameR/SwiftBill-POS/releases/tag/v1.0.5'
-        };
-        
-        window.autoUpdateUI.handleUpdateEvent('update-available', mockUpdateInfo);
-        console.log('Debug: Mock update notification triggered');
-    } else {
-        console.error('Debug: AutoUpdateUI not available');
-    }
-};
-
-window.clearDebugLogs = function() {
-    console.clear();
-    console.log('Debug: Console cleared');
-};
 
 class POSApp {
     constructor() {

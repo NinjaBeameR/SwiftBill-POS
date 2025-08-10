@@ -27,43 +27,8 @@ class AutoUpdateUI {
         // Check current update status on startup
         this.checkCurrentStatus();
         
-        // Add debug overlay for testing
-        this.addDebugOverlay();
-        
         this.isInitialized = true;
         console.log('AutoUpdateUI: Initialized successfully');
-    }
-
-    addDebugOverlay() {
-        // Create a simple debug indicator
-        const debugDiv = document.createElement('div');
-        debugDiv.id = 'auto-update-debug';
-        debugDiv.style.cssText = `
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #333;
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            z-index: 10000;
-            min-width: 200px;
-        `;
-        debugDiv.innerHTML = `
-            <strong>AutoUpdate Debug</strong><br>
-            Status: Initialized<br>
-            <span id="debug-status">Waiting for events...</span>
-        `;
-        document.body.appendChild(debugDiv);
-        console.log('AutoUpdateUI: Debug overlay added');
-    }
-
-    updateDebugStatus(message) {
-        const statusEl = document.getElementById('debug-status');
-        if (statusEl) {
-            statusEl.innerHTML = message;
-        }
     }
 
     createUpdateElements() {
@@ -189,64 +154,53 @@ class AutoUpdateUI {
     handleUpdateEvent(event, data) {
         console.log('AutoUpdateUI: Handling update event:', event);
         console.log('AutoUpdateUI: Event data:', JSON.stringify(data, null, 2));
-        
-        // Update debug overlay
-        this.updateDebugStatus(`Event: ${event}<br>Data: ${JSON.stringify(data, null, 1)}`);
 
         switch (event) {
             case 'checking-for-update':
                 console.log('AutoUpdateUI: Update check started');
-                this.updateDebugStatus('Checking for updates...');
                 this.showCheckingState();
                 break;
 
             case 'update-available':
                 console.log('AutoUpdateUI: Update available, showing notification');
-                this.updateDebugStatus(`Update available: ${data.version}`);
                 this.updateInfo = data;
                 this.showUpdateAvailable(data);
                 break;
 
             case 'update-not-available':
                 console.log('AutoUpdateUI: No update available');
-                this.updateDebugStatus('No update available');
                 this.hideNotificationBar();
                 break;
 
             case 'download-progress':
                 console.log('AutoUpdateUI: Download progress:', data.percent + '%');
-                this.updateDebugStatus(`Downloading: ${data.percent}%`);
                 this.updateDownloadProgress(data);
                 break;
 
             case 'update-downloaded':
                 console.log('AutoUpdateUI: Update downloaded, ready to install');
-                this.updateDebugStatus('Update ready to install!');
                 this.showUpdateReady(data);
                 break;
 
             case 'update-error':
                 console.error('AutoUpdateUI: Update error:', data.message);
-                this.updateDebugStatus(`Error: ${data.message}`);
                 this.showUpdateError(data);
                 break;
 
             case 'app-restarting':
                 console.log('AutoUpdateUI: App restarting');
-                this.updateDebugStatus('Restarting app...');
                 this.showRestartMessage();
                 break;
                 
             default:
-                console.warn('AutoUpdateUI: Unknown event:', event);
-                this.updateDebugStatus(`Unknown event: ${event}`);
+                console.warn('AutoUpdateUI: Unknown update event:', event);
+                break;
         }
     }
 
     showUpdateAvailable(info) {
         console.log('AutoUpdateUI: showUpdateAvailable called');
         console.log('AutoUpdateUI: Update info:', JSON.stringify(info, null, 2));
-        console.log('AutoUpdateUI: Dismissed updates:', Array.from(this.dismissedUpdates));
         
         // Check if this update was already dismissed
         if (this.dismissedUpdates.has(info.version)) {
@@ -263,16 +217,12 @@ class AutoUpdateUI {
             console.error('AutoUpdateUI: Message text element not found');
         }
 
-        this.showNotificationBar();
-        console.log('AutoUpdateUI: Notification bar should be visible');
+        // Store update info for the notification
+        this.updateInfo = info;
         
-        // Test alert to verify the function is called
-        setTimeout(() => {
-            console.log('AutoUpdateUI: Showing test alert for update:', info.version);
-            if (typeof alert !== 'undefined') {
-                alert(`✅ AUTO-UPDATE WORKING!\n\nUpdate Available: ${info.version}\nRelease: ${info.releaseName}\n\nThe auto-update system is detecting updates correctly!`);
-            }
-        }, 1000);
+        // Show the notification bar and keep it visible until user action
+        this.showNotificationBar();
+        console.log('AutoUpdateUI: Notification bar displayed and will remain visible until dismissed');
     }
 
     showUpdateReady(info) {
@@ -383,13 +333,19 @@ class AutoUpdateUI {
         const notification = document.getElementById('auto-update-notification');
         if (notification) {
             notification.style.display = 'flex';
+            notification.classList.add('show');
+            console.log('AutoUpdateUI: Notification bar displayed with show class');
         }
     }
 
     hideNotificationBar() {
         const notification = document.getElementById('auto-update-notification');
         if (notification) {
-            notification.style.display = 'none';
+            notification.classList.remove('show');
+            // Use a small delay to allow the animation to complete before hiding
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 300);
         }
     }
 
@@ -490,19 +446,6 @@ class AutoUpdateUI {
             return result;
         } catch (error) {
             console.error('AutoUpdateUI: Manual check failed:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    // Test methods for development
-    async testUpdateScenario(scenario) {
-        try {
-            const { ipcRenderer } = require('electron');
-            const result = await ipcRenderer.invoke('test-update-scenario', scenario);
-            console.log('AutoUpdateUI: Test scenario result:', result);
-            return result;
-        } catch (error) {
-            console.error('AutoUpdateUI: Test scenario failed:', error);
             return { success: false, error: error.message };
         }
     }

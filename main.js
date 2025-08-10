@@ -98,17 +98,11 @@ const createWindow = () => {
   // Show window when ready to prevent visual flash
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-    
-    // Open DevTools in development for debugging
-    if (!app.isPackaged || process.env.NODE_ENV === 'development') {
-      mainWindow.webContents.openDevTools();
-      console.log('AutoUpdater: DevTools opened for debugging');
-    }
   });
 
-  // Open DevTools in development
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.webContents.openDevTools();
+  // Initialize auto-updater after window is ready
+  if (app.isPackaged) {
+    setupAutoUpdater();
   }
 };
 
@@ -993,34 +987,6 @@ ipcMain.handle('open-release-url', async (event, url) => {
     return { success: true };
   } catch (error) {
     console.error('AutoUpdater: Failed to open URL:', error);
-    return { success: false, error: error.message };
-  }
-});
-
-// Test handler for development (simulate update scenarios)
-ipcMain.handle('test-update-scenario', (event, scenario) => {
-  try {
-    if (scenario === 'update-available') {
-      const mockInfo = {
-        version: '1.0.3',
-        releaseDate: new Date().toISOString(),
-        releaseName: 'Test Version 1.0.3',
-        releaseNotes: 'This is a test update for development purposes.',
-        releaseUrl: 'https://github.com/NinjaBeameR/SwiftBill-POS/releases/tag/v1.0.3'
-      };
-      
-      updateState.updateAvailable = true;
-      updateState.updateInfo = mockInfo;
-      notifyRenderer('update-available', mockInfo);
-      
-    } else if (scenario === 'no-update') {
-      updateState.updateAvailable = false;
-      updateState.updateInfo = null;
-      notifyRenderer('update-not-available');
-    }
-    
-    return { success: true };
-  } catch (error) {
     return { success: false, error: error.message };
   }
 });
