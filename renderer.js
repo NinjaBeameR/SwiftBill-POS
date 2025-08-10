@@ -65,6 +65,9 @@ class POSApp {
         this.billingMode = null; // 'table' or 'counter'
         this.currentLocation = null; // table number or counter number
         
+        // Service fee functionality
+        this.serviceFeePercentage = 0; // Default: no service fee
+        
         // Search functionality variables
         this.searchDebounceTimer = null;
         this.currentSearchResults = [];
@@ -285,6 +288,12 @@ class POSApp {
         // Print button
         document.getElementById('print-order').addEventListener('click', () => {
             this.printOrder();
+        });
+
+        // Service fee dropdown
+        document.getElementById('service-fee-select').addEventListener('change', (e) => {
+            this.serviceFeePercentage = parseFloat(e.target.value);
+            this.updateTotals();
         });
 
         // Search functionality
@@ -2302,14 +2311,33 @@ class POSApp {
     updateTotals() {
         const subtotal = this.getSubtotal();
         const parcelCharges = this.getTotalParcelCharges();
+        const serviceFee = this.getServiceFee();
         const total = this.getTotal();
 
         document.getElementById('subtotal').textContent = `₹${subtotal.toFixed(2)}`;
         document.getElementById('tax').textContent = `₹0.00`;
         document.getElementById('total').textContent = `₹${total.toFixed(2)}`;
         
+        // Update service fee display
+        this.updateServiceFeeDisplay();
+        
         // Update parcel charge display to show selective charges
         this.updateSelectiveParcelChargeDisplay();
+    }
+
+    updateServiceFeeDisplay() {
+        const serviceFeeAmount = this.getServiceFee();
+        const serviceFeeAmountElement = document.getElementById('service-fee-amount');
+        const serviceFeeLabelElement = document.getElementById('service-fee-label');
+        const serviceFeeLineElement = document.getElementById('service-fee-line');
+
+        if (this.serviceFeePercentage > 0) {
+            serviceFeeAmountElement.textContent = `₹${serviceFeeAmount.toFixed(2)}`;
+            serviceFeeLabelElement.textContent = `Service Fee (${this.serviceFeePercentage}%):`;
+            serviceFeeLineElement.style.display = 'flex';
+        } else {
+            serviceFeeLineElement.style.display = 'none';
+        }
     }
 
     getSubtotal() {
@@ -2320,8 +2348,16 @@ class POSApp {
         return 0; // No tax applied
     }
 
+    getServiceFee() {
+        if (this.serviceFeePercentage === 0) {
+            return 0;
+        }
+        const subtotal = this.getSubtotal();
+        return (subtotal * this.serviceFeePercentage) / 100;
+    }
+
     getTotal() {
-        return this.getSubtotal() + this.getTotalParcelCharges(); // Total includes selective parcel charges
+        return this.getSubtotal() + this.getTotalParcelCharges() + this.getServiceFee(); // Total includes selective parcel charges and service fee
     }
 
     loadCurrentOrder() {
@@ -2329,8 +2365,22 @@ class POSApp {
             const storageKey = this.billingMode === 'table' ? 
                 `table_${this.currentLocation}_order` : 
                 `counter_${this.currentLocation}_order`;
+                
+            const serviceFeeKey = this.billingMode === 'table' ? 
+                `table_${this.currentLocation}_serviceFee` : 
+                `counter_${this.currentLocation}_serviceFee`;
+                
             const savedOrder = localStorage.getItem(storageKey);
+            const savedServiceFee = localStorage.getItem(serviceFeeKey);
+            
             this.currentOrder = savedOrder ? JSON.parse(savedOrder) : [];
+            this.serviceFeePercentage = savedServiceFee ? JSON.parse(savedServiceFee) : 0;
+            
+            // Update service fee dropdown to reflect loaded value
+            const serviceFeeDropdown = document.getElementById('service-fee-dropdown');
+            if (serviceFeeDropdown) {
+                serviceFeeDropdown.value = this.serviceFeePercentage;
+            }
             
             // Ensure backward compatibility - migrate from isParcel to parcelCharge system
             this.currentOrder = this.currentOrder.map(item => ({
@@ -2346,6 +2396,7 @@ class POSApp {
         } catch (error) {
             console.error('Error loading current order:', error);
             this.currentOrder = [];
+            this.serviceFeePercentage = 0;
         }
     }
 
@@ -2355,7 +2406,13 @@ class POSApp {
                 const storageKey = this.billingMode === 'table' ? 
                     `table_${this.currentLocation}_order` : 
                     `counter_${this.currentLocation}_order`;
+                    
+                const serviceFeeKey = this.billingMode === 'table' ? 
+                    `table_${this.currentLocation}_serviceFee` : 
+                    `counter_${this.currentLocation}_serviceFee`;
+                    
                 localStorage.setItem(storageKey, JSON.stringify(this.currentOrder));
+                localStorage.setItem(serviceFeeKey, JSON.stringify(this.serviceFeePercentage));
             } catch (error) {
                 console.error('Error saving current order:', error);
             }
@@ -2451,6 +2508,13 @@ class POSApp {
             
             // Clear order after successful print
             this.currentOrder = [];
+            this.serviceFeePercentage = 0;
+            
+            // Update UI to reflect cleared service fee
+            const serviceFeeDropdown = document.getElementById('service-fee-dropdown');
+            if (serviceFeeDropdown) {
+                serviceFeeDropdown.value = '0';
+            }
             
             if (this.billingMode === 'table') {
                 this.activeTables.delete(this.currentTable);
@@ -2497,6 +2561,13 @@ class POSApp {
                     
                     // Clear order after successful print
                     this.currentOrder = [];
+                    this.serviceFeePercentage = 0;
+                    
+                    // Update UI to reflect cleared service fee
+                    const serviceFeeDropdown = document.getElementById('service-fee-dropdown');
+                    if (serviceFeeDropdown) {
+                        serviceFeeDropdown.value = '0';
+                    }
                     
                     if (this.billingMode === 'table') {
                         this.activeTables.delete(this.currentTable);
@@ -2965,6 +3036,13 @@ class POSApp {
             
             // Clear order after successful print
             this.currentOrder = [];
+            this.serviceFeePercentage = 0;
+            
+            // Update UI to reflect cleared service fee
+            const serviceFeeDropdown = document.getElementById('service-fee-dropdown');
+            if (serviceFeeDropdown) {
+                serviceFeeDropdown.value = '0';
+            }
             
             if (this.billingMode === 'table') {
                 this.activeTables.delete(this.currentTable);
@@ -3739,6 +3817,12 @@ class POSApp {
                     <div class="total-row">
                         <span>Parcel Charges (${this.getParcelItemsCount()} items):</span>
                         <span>₹${this.getTotalParcelCharges().toFixed(2)}</span>
+                    </div>
+                    ` : ''}
+                    ${this.serviceFeePercentage > 0 ? `
+                    <div class="total-row">
+                        <span>Service Fee (${this.serviceFeePercentage}%):</span>
+                        <span>₹${this.getServiceFee().toFixed(2)}</span>
                     </div>
                     ` : ''}
                     <div class="total-row grand-total">

@@ -1,5 +1,5 @@
 # 🍽️ SwiftBill POS by NMD
-
+[THIS IS A AI GENERATED SOFTWARE BY NON TECH PERSON , EXPECT CERTAIN MISTAKES AND SOME LAME ROBOTIC STUFF]
 A professional Point of Sale system built with Electron for restaurant operations, featuring dual billing modes, thermal printing, and comprehensive menu management.
 
 ## ✨ Features
