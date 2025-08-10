@@ -353,8 +353,8 @@ function initializeAutoUpdater() {
   });
 
   // Configure update behavior
-  autoUpdater.autoDownload = false; // Manual control over download
-  autoUpdater.autoInstallOnAppQuit = false; // Manual control over install
+  autoUpdater.autoDownload = true; // Automatically download updates when available
+  autoUpdater.autoInstallOnAppQuit = true; // Automatically install when app quits
   autoUpdater.allowPrerelease = false;
 
   // Force dev update config for development testing
@@ -413,11 +413,8 @@ function setupAutoUpdaterListeners() {
       console.log('AutoUpdater: Showing update notification for version:', info.version);
       notifyRenderer('update-available', updateState.updateInfo);
       
-      // Start downloading silently
-      setTimeout(() => {
-        console.log('AutoUpdater: Starting silent download...');
-        downloadUpdateSilently();
-      }, 2000);
+      // Download will start automatically due to autoDownload: true
+      console.log('AutoUpdater: Download will start automatically...');
     } else {
       console.log('AutoUpdater: Update was previously dismissed, not showing notification');
     }
@@ -457,8 +454,17 @@ function setupAutoUpdaterListeners() {
     
     notifyRenderer('update-downloaded', {
       version: info.version,
-      releaseName: info.releaseName || `Version ${info.version}`
+      releaseName: info.releaseName || `Version ${info.version}`,
+      readyToInstall: true
     });
+    
+    // Show more prominent notification that update is ready
+    setTimeout(() => {
+      notifyRenderer('update-ready-to-install', {
+        version: info.version,
+        releaseName: info.releaseName || `Version ${info.version}`
+      });
+    }, 1000);
   });
 
   // Event: Error occurred

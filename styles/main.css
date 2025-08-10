@@ -1300,6 +1300,35 @@ body {
     padding: 20px;
 }
 
+/* Small progress indicators for notification bar */
+.download-progress-indicator {
+    margin-left: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.progress-bar-small {
+    width: 120px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill-small {
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.progress-text-small {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    min-width: 80px;
+}
+
 .update-checking {
     text-align: center;
     color: #2563eb;

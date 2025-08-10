@@ -69,10 +69,10 @@ class AutoUpdateUI {
                     </div>
                 </div>
                 <div class="update-modal-footer">
-                    <button id="auto-update-download-btn" class="btn btn-primary">Download Now</button>
-                    <button id="auto-update-install-btn" class="btn btn-success" style="display: none;">Restart & Install</button>
-                    <button id="auto-update-later-btn" class="btn btn-secondary">Later</button>
-                    <button id="auto-update-release-btn" class="btn btn-info" style="display: none;">View Release</button>
+                    <button id="auto-update-download-btn" class="btn btn-primary" style="display: none;">📥 Download Update</button>
+                    <button id="auto-update-install-btn" class="btn btn-success" style="display: none;">🚀 Install & Restart</button>
+                    <button id="auto-update-later-btn" class="btn btn-secondary">⏰ Later</button>
+                    <button id="auto-update-release-btn" class="btn btn-info" style="display: none;">📋 View Release</button>
                 </div>
             </div>
         `;
@@ -182,6 +182,11 @@ class AutoUpdateUI {
                 this.showUpdateReady(data);
                 break;
 
+            case 'update-ready-to-install':
+                console.log('AutoUpdateUI: Update ready to install - showing install prompt');
+                this.showInstallPrompt(data);
+                break;
+
             case 'update-error':
                 console.error('AutoUpdateUI: Update error:', data.message);
                 this.showUpdateError(data);
@@ -211,8 +216,8 @@ class AutoUpdateUI {
         console.log('AutoUpdateUI: Showing update notification');
         const messageText = document.getElementById('auto-update-message-text');
         if (messageText) {
-            messageText.textContent = `Update available: ${info.releaseName || info.version}`;
-            console.log('AutoUpdateUI: Updated message text');
+            messageText.textContent = `SwiftBill-POS ${info.version} is available - Downloading automatically...`;
+            console.log('AutoUpdateUI: Updated message text with auto-download info');
         } else {
             console.error('AutoUpdateUI: Message text element not found');
         }
@@ -223,6 +228,30 @@ class AutoUpdateUI {
         // Show the notification bar and keep it visible until user action
         this.showNotificationBar();
         console.log('AutoUpdateUI: Notification bar displayed and will remain visible until dismissed');
+        
+        // Show download progress indicator after a brief delay
+        setTimeout(() => {
+            this.showDownloadProgress();
+        }, 2000);
+    }
+
+    showDownloadProgress() {
+        const notification = document.getElementById('auto-update-notification');
+        if (!notification) return;
+        
+        // Add progress indicator to notification if not already present
+        let progressIndicator = notification.querySelector('.download-progress-indicator');
+        if (!progressIndicator) {
+            progressIndicator = document.createElement('div');
+            progressIndicator.className = 'download-progress-indicator';
+            progressIndicator.innerHTML = `
+                <div class="progress-bar-small">
+                    <div class="progress-fill-small" style="width: 0%"></div>
+                </div>
+                <span class="progress-text-small">Downloading...</span>
+            `;
+            notification.querySelector('.update-message').appendChild(progressIndicator);
+        }
     }
 
     showUpdateReady(info) {
@@ -230,19 +259,31 @@ class AutoUpdateUI {
         const downloadBtn = document.getElementById('auto-update-download-btn');
         const installBtn = document.getElementById('auto-update-install-btn');
         const progressContainer = document.getElementById('auto-update-progress-container');
+        const versionInfo = document.getElementById('auto-update-version-info');
 
         if (downloadBtn) downloadBtn.style.display = 'none';
         if (installBtn) installBtn.style.display = 'inline-block';
         if (progressContainer) progressContainer.style.display = 'none';
 
-        // Update notification bar message
+        // Update modal content
+        if (versionInfo) {
+            versionInfo.innerHTML = `
+                <strong>✅ SwiftBill-POS ${info.version} is ready!</strong>
+                <br><small>Update downloaded and ready to install</small>
+            `;
+        }
+
+        // Update notification bar message - this will trigger the install prompt
         const messageText = document.getElementById('auto-update-message-text');
         if (messageText) {
-            messageText.textContent = 'Update ready to install';
+            messageText.textContent = `SwiftBill-POS ${info.version} downloaded successfully!`;
         }
     }
 
     updateDownloadProgress(progress) {
+        console.log('AutoUpdateUI: Download progress:', progress.percent + '%');
+        
+        // Update modal progress if open
         const progressBar = document.getElementById('auto-update-progress-bar');
         const progressText = document.getElementById('auto-update-progress-text');
         const progressContainer = document.getElementById('auto-update-progress-container');
@@ -254,11 +295,68 @@ class AutoUpdateUI {
             const mbTotal = (progress.total / 1024 / 1024).toFixed(1);
             progressText.textContent = `Downloading... ${progress.percent}% (${mbTransferred} MB / ${mbTotal} MB)`;
         }
+        
+        // Update notification progress bar
+        const notification = document.getElementById('auto-update-notification');
+        if (notification) {
+            const progressFill = notification.querySelector('.progress-fill-small');
+            const progressTextSmall = notification.querySelector('.progress-text-small');
+            const messageText = document.getElementById('auto-update-message-text');
+            
+            if (progressFill) {
+                progressFill.style.width = `${progress.percent}%`;
+            }
+            
+            if (progressTextSmall) {
+                progressTextSmall.textContent = `${progress.percent}% downloaded`;
+            }
+            
+            if (messageText) {
+                messageText.textContent = `SwiftBill-POS ${this.updateInfo?.version} - ${progress.percent}% downloaded`;
+            }
+        }
     }
 
     showCheckingState() {
         // Could show a subtle checking indicator if desired
         console.log('AutoUpdateUI: Checking for updates...');
+    }
+
+    showInstallPrompt(info) {
+        // Update the notification to show install option
+        const notification = document.getElementById('auto-update-notification');
+        const messageText = document.getElementById('auto-update-message-text');
+        
+        if (messageText) {
+            messageText.textContent = `SwiftBill-POS ${info.version} is ready to install!`;
+        }
+        
+        // Update notification actions to show install button
+        const actionsContainer = notification.querySelector('.update-actions');
+        if (actionsContainer) {
+            actionsContainer.innerHTML = `
+                <button id="auto-update-install-now-btn" class="btn btn-sm btn-success">🚀 Install & Restart</button>
+                <button id="auto-update-install-later-btn" class="btn btn-sm btn-secondary">Later</button>
+            `;
+            
+            // Add event listeners for new buttons
+            document.getElementById('auto-update-install-now-btn').addEventListener('click', () => {
+                this.installUpdate();
+            });
+            
+            document.getElementById('auto-update-install-later-btn').addEventListener('click', () => {
+                this.dismissUpdate();
+            });
+        }
+        
+        // Remove download progress indicator
+        const progressIndicator = notification.querySelector('.download-progress-indicator');
+        if (progressIndicator) {
+            progressIndicator.remove();
+        }
+        
+        // Show notification if hidden
+        this.showNotificationBar();
     }
 
     showUpdateError(error) {
@@ -298,9 +396,14 @@ class AutoUpdateUI {
         const versionInfo = document.getElementById('auto-update-version-info');
         const releaseNotes = document.getElementById('auto-update-release-notes');
         const releaseBtn = document.getElementById('auto-update-release-btn');
+        const downloadBtn = document.getElementById('auto-update-download-btn');
+        const installBtn = document.getElementById('auto-update-install-btn');
 
         if (versionInfo) {
-            versionInfo.textContent = `Version ${this.updateInfo.version} is now available`;
+            versionInfo.innerHTML = `
+                <strong>SwiftBill-POS ${this.updateInfo.version}</strong> is available
+                <br><small>Downloading automatically in the background...</small>
+            `;
         }
 
         if (releaseNotes) {
@@ -314,9 +417,14 @@ class AutoUpdateUI {
             releaseNotes.innerHTML = notesContent;
         }
 
-        // Show release button if URL is available
+        // Show appropriate buttons based on state
         if (releaseBtn && this.updateInfo.releaseUrl) {
             releaseBtn.style.display = 'inline-block';
+        }
+
+        // Hide download button since auto-download is enabled
+        if (downloadBtn) {
+            downloadBtn.style.display = 'none';
         }
 
         modal.style.display = 'flex';
