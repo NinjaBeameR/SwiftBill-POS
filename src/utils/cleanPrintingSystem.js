@@ -16,19 +16,18 @@ class CleanPrintingSystem {
         this.debugMode = true; // Simple debug logging
         this.initialized = false;
         
-        // Print settings optimized for thermal printers  
-        // FIXED: Updated settings to match exact 80mm thermal paper dimensions
+        // Print settings optimized for TVS RP 3200 Plus thermal printer
+        // FIXED: Optimized for 70mm safe printable area with maximum readability
         this.settings = {
-            // 80mm = 302px at 96 DPI (standard screen resolution)
-            thermalWidth: '80mm',
-            thermalWidthPx: '302px',  // Exact pixel equivalent 
+            // 70mm = TVS RP 3200 Plus safe zone with 10mm buffer
+            thermalWidth: '70mm',
             pageMargin: '0',
-            bodyPadding: '3mm',
+            bodyPadding: '1.5mm',  // Optimal for readability without overflow
             fontSize: {
-                base: '14px',    // Readable on thermal paper
-                header: '16px',  // Slightly larger for headers
-                title: '18px',   // Restaurant name prominence  
-                total: '16px'    // Important totals visibility
+                base: '11px',    // Optimized for 70mm width
+                header: '12px',  // Compact headers
+                title: '14px',   // Restaurant name visibility  
+                total: '12px'    // Important totals readability
             },
             fontFamily: "'Courier New', monospace"  // Monospace ensures consistent width
         };
@@ -235,27 +234,38 @@ class CleanPrintingSystem {
             border-bottom: 2px solid #000;
             padding-bottom: 8px;
             margin-bottom: 10px;
+            width: 100%;
         }
         
         .restaurant-name {
             font-size: ${this.settings.fontSize.title};
             font-weight: bold;
             margin-bottom: 4px;
+            /* Prevent restaurant name overflow */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .restaurant-details {
             font-size: ${this.settings.fontSize.base};
             margin: 2px 0;
+            /* Prevent details overflow */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .bill-info {
             margin: 10px 0;
             font-size: ${this.settings.fontSize.base};
             font-weight: bold;
+            width: 100%;
         }
         
         .items-section {
             margin: 15px 0;
+            width: 100%;
         }
         
         .item-header {
@@ -265,6 +275,13 @@ class CleanPrintingSystem {
             padding: 4px 0;
             font-weight: bold;
             font-size: ${this.settings.fontSize.base};
+            width: 100%;
+        }
+        
+        .item-header span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .item-row {
@@ -275,17 +292,47 @@ class CleanPrintingSystem {
             padding: 2px 0;
             border-bottom: 1px dotted #666;
             min-height: 20px;
+            width: 100%;
+            /* Prevent row overflow */
+            overflow: hidden;
         }
         
-        .item-name { flex: 1; padding-right: 5px; }
-        .item-qty { width: 15mm; text-align: center; }
-        .item-rate { width: 20mm; text-align: right; }
-        .item-total { width: 25mm; text-align: right; }
+        /* TVS RP 3200 Plus OPTIMIZED column widths - ABSOLUTE NO CUT-OFF GUARANTEE */
+        .item-name { 
+            flex: 1; 
+            padding-right: 2px; 
+            min-width: 0;  /* Allow text wrapping */
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            hyphens: auto;
+            max-width: 36mm; /* Optimized for 70mm total width */
+            font-size: 11px; /* Reduced for better fit */
+        }
+        .item-qty { 
+            width: 5mm; 
+            text-align: center; 
+            flex-shrink: 0;
+            font-size: 10px; /* Compact but readable */
+        }
+        .item-rate { 
+            width: 12mm; 
+            text-align: right; 
+            flex-shrink: 0;
+            font-size: 10px; /* Compact but readable */
+        }
+        .item-total { 
+            width: 14mm; 
+            text-align: right; 
+            flex-shrink: 0;
+            font-weight: bold;
+            font-size: 10px; /* Compact but bold for visibility */
+        }
         
         .totals-section {
             border-top: 2px solid #000;
             margin-top: 15px;
             padding-top: 8px;
+            width: 100%;
         }
         
         .total-row {
@@ -293,6 +340,26 @@ class CleanPrintingSystem {
             justify-content: space-between;
             margin: 3px 0;
             font-size: ${this.settings.fontSize.base};
+            width: 100%;
+            /* Prevent total row overflow */
+            overflow: hidden;
+        }
+        
+        .total-row span:first-child {
+            flex: 1;
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding-right: 5px;
+        }
+        
+        .total-row span:last-child {
+            flex-shrink: 0;
+            text-align: right;
+            font-weight: bold;
+            width: 14mm;  /* Match item-total width for perfect alignment */
+            font-size: 10px;  /* Optimized for 70mm width */
         }
         
         .grand-total {
@@ -339,9 +406,11 @@ class CleanPrintingSystem {
         
         ${items.map((item, index) => {
             const itemTotal = item.price * item.quantity;
+            // SAFETY: Truncate item names for 70mm width optimization
+            const safeName = item.name.length > 18 ? item.name.substring(0, 15) + '...' : item.name;
             return `
             <div class="item-row">
-                <span class="item-name">${index + 1}. ${item.name}</span>
+                <span class="item-name">${safeName}</span>
                 <span class="item-qty">${item.quantity}</span>
                 <span class="item-rate">₹${item.price.toFixed(2)}</span>
                 <span class="item-total">₹${itemTotal.toFixed(2)}</span>
@@ -420,6 +489,7 @@ class CleanPrintingSystem {
             border-bottom: 2px solid #000;
             padding-bottom: 6px;
             margin-bottom: 10px;
+            width: 100%;
         }
         
         .kot-title {
@@ -435,6 +505,7 @@ class CleanPrintingSystem {
         
         .items-section {
             margin: 15px 0;
+            width: 100%;
         }
         
         .item-row {
@@ -443,11 +514,29 @@ class CleanPrintingSystem {
             border-bottom: 1px solid #000;
             font-size: ${this.settings.fontSize.base};
             font-weight: bold;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .item-name {
+            flex: 1;
+            padding-right: 2px;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            hyphens: auto;
+            /* TVS RP 3200 Plus optimized KOT item name width */
+            max-width: 50mm;  /* Optimized for 70mm total width */
+            overflow: hidden;
         }
         
         .item-quantity {
             font-size: ${this.settings.fontSize.header};
             font-weight: bold;
+            width: 8mm;  /* Optimized for 70mm width */
+            text-align: right;
+            flex-shrink: 0;
         }
         
         .footer {
@@ -456,6 +545,7 @@ class CleanPrintingSystem {
             padding-top: 6px;
             text-align: center;
             font-weight: bold;
+            width: 100%;
         }
     </style>
 </head>
@@ -468,11 +558,16 @@ class CleanPrintingSystem {
     </div>
 
     <div class="items-section">
-        ${items.map(item => `
+        ${items.map(item => {
+            // SAFETY: Truncate KOT item names for 70mm width
+            const safeKotName = item.name.length > 22 ? item.name.substring(0, 19) + '...' : item.name;
+            return `
         <div class="item-row">
-            <span class="item-quantity">${item.quantity}x</span> ${item.name}
+            <span class="item-name">${safeKotName}</span>
+            <span class="item-quantity">${item.quantity}x</span>
         </div>
-        `).join('')}
+        `;
+        }).join('')}
     </div>
 
     <div class="footer">
@@ -497,57 +592,104 @@ class CleanPrintingSystem {
         return `
         @media print {
             @page {
-                /* 80mm thermal paper - exact size to prevent scaling */
-                size: 80mm auto;
-                margin: 0;
+                /* TVS RP 3200 Plus OPTIMIZED: 70mm width for guaranteed no cut-off */
+                size: 70mm auto;
+                margin: 0mm !important;
+                padding: 0mm !important;
+                /* Override all possible margin sources */
+                margin-top: 0mm !important;
+                margin-bottom: 0mm !important;
+                margin-left: 0mm !important;
+                margin-right: 0mm !important;
                 /* Prevent shrink-to-fit scaling */
                 -webkit-print-color-adjust: exact;
                 color-adjust: exact;
             }
             
-            body {
-                /* Critical: Match pixel width to 80mm (302px at 96 DPI) */
-                width: ${this.settings.thermalWidthPx} !important;
-                max-width: ${this.settings.thermalWidthPx} !important;
-                min-width: ${this.settings.thermalWidthPx} !important;
+            html {
                 margin: 0 !important;
-                padding: 3mm !important;
-                /* Prevent any browser scaling */
-                transform: none !important;
-                zoom: 1 !important;
-                font-size: ${this.settings.fontSize.base} !important;
+                padding: 0 !important;
+                width: 70mm !important;  /* Match TVS RP 3200 Plus safe zone */
             }
             
-            /* Disable scaling for all print elements */
-            * {
+            body {
+                /* TVS RP 3200 Plus SAFE ZONE: 70mm width with 10mm buffer */
+                width: 70mm !important;  /* 10mm safety margin from 80mm paper edge */
+                max-width: 70mm !important;
+                min-width: 70mm !important;
+                margin: 0mm !important;
+                padding: 1mm !important;  /* Minimal edge clearance */
+                /* Force absolute positioning from top-left */
+                position: absolute !important;
+                top: 0mm !important;
+                left: 0mm !important;
+                /* Disable any browser scaling */
                 transform: none !important;
                 zoom: 1 !important;
+                scale: 1 !important;
+                font-size: 11px !important;  /* Optimized for 70mm width */
+                /* Override any default styles */
+                background: white !important;
+                color: black !important;
+            }
+            
+            /* Force zero margins on ALL elements during print */
+            *, *:before, *:after {
+                margin: 0 !important;
+                transform: none !important;
+                zoom: 1 !important;
+                scale: 1 !important;
                 -webkit-transform: none !important;
+                box-sizing: border-box !important;
+            }
+            
+            /* Ensure content containers use full width */
+            .header, .bill-info, .items-section, .totals-section {
+                width: 100% !important;
+                margin: 0 !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
             }
         }
         
         body {
             font-family: ${this.settings.fontFamily};
-            font-size: ${this.settings.fontSize.base};
+            font-size: 11px;  /* Optimized for 70mm printer width */
             font-weight: bold;
             margin: 0;
-            padding: 3mm;
-            /* Screen display: use 302px to match 80mm exactly */
-            width: ${this.settings.thermalWidthPx};
-            max-width: ${this.settings.thermalWidthPx};
-            min-width: ${this.settings.thermalWidthPx};
+            padding: ${this.settings.bodyPadding};  /* Minimal padding for readability */
+            /* Screen display: TVS RP 3200 Plus optimized (70mm = ~266px at 203 DPI) */
+            width: 266px;  /* 70mm at 203 DPI = 266px */
+            max-width: 266px;
+            min-width: 266px;
             background: white;
             color: #000;
             line-height: 1.3;
             word-wrap: break-word;
             /* Prevent content overflow */
             overflow-wrap: break-word;
+            /* Remove any default browser margins */
+            border: none;
+            outline: none;
         }
         
         * {
             box-sizing: border-box;
             -webkit-print-color-adjust: exact;
             color-adjust: exact;
+        }
+        
+        /* Force all elements to start from top-left for thermal printing */
+        html, body {
+            margin: 0 !important;
+            padding: 1mm !important;  /* Consistent minimal padding */
+        }
+        
+        /* Ensure all elements use full width */
+        .header, .bill-info, .items-section, .totals-section {
+            width: 100%;
+            margin-left: 0;
+            margin-right: 0;
         }`;
     }
 

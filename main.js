@@ -614,27 +614,34 @@ ipcMain.handle('silent-print-kot', async (event, kotContent) => {
         console.log('📄 KOT content loaded, starting print immediately...');
         
         try {
-          // FIXED: Proper Electron print settings for 80mm thermal paper
-          // Root cause: pageSize was incorrect causing browser scaling
+          // CRITICAL: Force absolute zero margins for thermal printer alignment
+          // Root cause: Thermal printers have hardware margins that need aggressive override
           printWindow.webContents.print({
             silent: true,
             printBackground: true,
-            // Critical: Disable shrink-to-fit completely
+            // CRITICAL: 100% scale with no margin tolerance
             scaleFactor: 100,
             margins: {
-              marginType: 'none'  // Zero margins for thermal paper
+              marginType: 'custom',
+              top: 0,      // Absolute zero top margin
+              bottom: 0,   // Absolute zero bottom margin  
+              left: 0,     // Absolute zero left margin
+              right: 0     // Absolute zero right margin
             },
             pageSize: {
-              // 80mm = 80,000 micrometers (exact thermal paper width)
-              width: 80000,  
-              // Auto height for variable content length
-              height: 297000  // A4 height as fallback, will auto-adjust
+              // EXACT 80mm thermal paper width in micrometers
+              width: 80000,   // 80mm = 80,000 micrometers
+              height: 297000  // A4 height fallback, auto-adjusts for content
             },
-            // Prevent any browser scaling
+            // High-resolution printing settings
             dpi: {
-              horizontal: 300,  // Thermal printer DPI
-              vertical: 300
-            }
+              horizontal: 203,  // Standard thermal printer DPI (not 300)
+              vertical: 203
+            },
+            // Additional overrides for problematic printers
+            pageRanges: {},
+            headerFooterEnabled: false,
+            landscape: false
           }, (success, failureReason) => {
             if (!resolved) {
               resolved = true;
@@ -736,27 +743,34 @@ ipcMain.handle('silent-print-bill', async (event, billContent) => {
         console.log('📄 Bill content loaded, starting print immediately...');
         
         try {
-          // FIXED: Proper Electron print settings for 80mm thermal paper (Customer Bill)
-          // Same fix as KOT - prevent scaling with correct dimensions
+          // CRITICAL: Force absolute zero margins for thermal printer alignment (Customer Bill)
+          // Same aggressive margin override as KOT to eliminate left/top shifts
           printWindow.webContents.print({
             silent: true,
             printBackground: true,
-            // Critical: Disable shrink-to-fit completely
+            // CRITICAL: 100% scale with no margin tolerance
             scaleFactor: 100,
             margins: {
-              marginType: 'none'  // Zero margins for thermal paper
+              marginType: 'custom',
+              top: 0,      // Absolute zero top margin
+              bottom: 0,   // Absolute zero bottom margin  
+              left: 0,     // Absolute zero left margin
+              right: 0     // Absolute zero right margin
             },
             pageSize: {
-              // 80mm = 80,000 micrometers (exact thermal paper width)
-              width: 80000,  
-              // Auto height for variable content length
-              height: 297000  // A4 height as fallback, will auto-adjust
+              // EXACT 80mm thermal paper width in micrometers
+              width: 80000,   // 80mm = 80,000 micrometers
+              height: 297000  // A4 height fallback, auto-adjusts for content
             },
-            // Prevent any browser scaling
+            // High-resolution printing settings
             dpi: {
-              horizontal: 300,  // Thermal printer DPI
-              vertical: 300
-            }
+              horizontal: 203,  // Standard thermal printer DPI (not 300)
+              vertical: 203
+            },
+            // Additional overrides for problematic printers
+            pageRanges: {},
+            headerFooterEnabled: false,
+            landscape: false
           }, (success, failureReason) => {
             if (!resolved) {
               resolved = true;

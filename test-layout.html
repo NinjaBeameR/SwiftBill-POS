@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Printing Layout - Full Width 80mm</title>
+    <meta charset="UTF-8">
+    <style>
+        @media print {
+            @page {
+                /* 80mm thermal paper - exact size to prevent scaling */
+                size: 80mm auto;
+                margin: 0 !important;
+                padding: 0 !important;
+                /* Prevent shrink-to-fit scaling */
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            
+            body {
+                /* Critical: Use full 80mm width with minimal padding */
+                width: 80mm !important;
+                max-width: 80mm !important;
+                min-width: 80mm !important;
+                margin: 0 !important;
+                padding: 2mm !important;  /* Minimal padding for edge clearance */
+                /* Prevent any browser scaling */
+                transform: none !important;
+                zoom: 1 !important;
+                font-size: 14px !important;
+            }
+            
+            /* Disable scaling for all print elements */
+            * {
+                transform: none !important;
+                zoom: 1 !important;
+                -webkit-transform: none !important;
+            }
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 0;
+            padding: 2mm;  /* Minimal padding for readability */
+            /* Screen display: use full 80mm width */
+            width: 80mm;
+            max-width: 80mm;
+            min-width: 80mm;
+            background: white;
+            color: #000;
+            line-height: 1.3;
+            word-wrap: break-word;
+            /* Prevent content overflow */
+            overflow-wrap: break-word;
+            /* Remove any default browser margins */
+            border: none;
+            outline: none;
+            border: 1px solid red; /* Visual guide for testing */
+        }
+        
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+        }
+        
+        /* Ensure all elements use full width */
+        .header, .bill-info, .items-section, .totals-section {
+            width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        
+        .restaurant-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .restaurant-details {
+            font-size: 14px;
+            margin: 2px 0;
+        }
+        
+        .bill-info {
+            margin: 10px 0;
+            font-size: 14px;
+            font-weight: bold;
+            width: 100%;
+        }
+        
+        .items-section {
+            margin: 15px 0;
+            width: 100%;
+        }
+        
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #000;
+            padding: 4px 0;
+            font-weight: bold;
+            font-size: 14px;
+            width: 100%;
+        }
+        
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin: 3px 0;
+            padding: 2px 0;
+            border-bottom: 1px dotted #666;
+            min-height: 20px;
+            width: 100%;
+        }
+        
+        /* Optimized column widths for 80mm paper */
+        .item-name { 
+            flex: 1; 
+            padding-right: 3px; 
+            min-width: 0;  /* Allow text wrapping */
+            overflow-wrap: break-word;
+        }
+        .item-qty { 
+            width: 10mm; 
+            text-align: center; 
+            flex-shrink: 0;
+        }
+        .item-rate { 
+            width: 18mm; 
+            text-align: right; 
+            flex-shrink: 0;
+        }
+        .item-total { 
+            width: 20mm; 
+            text-align: right; 
+            flex-shrink: 0;
+            font-weight: bold;
+        }
+        
+        .totals-section {
+            border-top: 2px solid #000;
+            margin-top: 15px;
+            padding-top: 8px;
+            width: 100%;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+            font-size: 14px;
+            width: 100%;
+        }
+        
+        .grand-total {
+            font-size: 16px;
+            font-weight: bold;
+            border: 1px solid #000;
+            padding: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="restaurant-name">UDUPI KRISHNAM VEG</div>
+        <div class="restaurant-details">123 Main Street, City - 560100</div>
+        <div class="restaurant-details">Ph: +91 12345 67890</div>
+        <div class="restaurant-details">GSTIN: 12ABC34567890</div>
+        <div class="restaurant-details">FSSAI: 12345678901234</div>
+    </div>
+
+    <div class="bill-info">
+        <div>Bill No: 240811001 | Table 5</div>
+        <div>Date: 11/08/2025 | Time: 14:30</div>
+    </div>
+
+    <div class="items-section">
+        <div class="item-header">
+            <span class="item-name">Item</span>
+            <span class="item-qty">Qty</span>
+            <span class="item-rate">Rate</span>
+            <span class="item-total">Total</span>
+        </div>
+        
+        <div class="item-row">
+            <span class="item-name">Masala Dosa</span>
+            <span class="item-qty">2</span>
+            <span class="item-rate">₹80</span>
+            <span class="item-total">₹160</span>
+        </div>
+        
+        <div class="item-row">
+            <span class="item-name">Filter Coffee Special</span>
+            <span class="item-qty">2</span>
+            <span class="item-rate">₹25</span>
+            <span class="item-total">₹50</span>
+        </div>
+        
+        <div class="item-row">
+            <span class="item-name">Vada Sambar</span>
+            <span class="item-qty">1</span>
+            <span class="item-rate">₹45</span>
+            <span class="item-total">₹45</span>
+        </div>
+    </div>
+
+    <div class="totals-section">
+        <div class="total-row">
+            <span>Subtotal:</span>
+            <span>₹255</span>
+        </div>
+        <div class="total-row">
+            <span>Service Charge (10%):</span>
+            <span>₹25.50</span>
+        </div>
+        <div class="total-row grand-total">
+            <span>TOTAL:</span>
+            <span>₹280.50</span>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 15px;">
+        <div>*** Thank You Visit Again ***</div>
+        <div style="margin-top: 10px;">This layout uses full 80mm width</div>
+        <div>No blank spaces on left/top</div>
+        <div>Red border shows exact paper edges</div>
+    </div>
+</body>
+</html>
