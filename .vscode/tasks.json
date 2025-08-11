@@ -8,6 +8,13 @@
 			"group": "build",
 			"isBackground": false,
 			"problemMatcher": []
+		},
+		{
+			"label": "Test POS Application",
+			"type": "shell",
+			"command": "npm start",
+			"isBackground": true,
+			"group": "build"
 		}
 	]
 }

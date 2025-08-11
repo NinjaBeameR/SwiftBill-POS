@@ -283,7 +283,7 @@ class BillingScreen {
                 const kotContent = this.generateKOTContent(kitchenOrderData);
                 console.log('🍳 Kitchen KOT content generated, printing...');
                 
-                const result = await window.require('electron').ipcRenderer.invoke('auto-silent-print', kotContent, 'kot');
+                const result = await window.require('electron').ipcRenderer.invoke('silent-print-kot', kotContent);
                 
                 if (result.success) {
                     kotsPrinted++;
@@ -314,7 +314,7 @@ class BillingScreen {
                 const kotContent = this.generateKOTContent(drinksOrderData);
                 console.log('☕ Drinks KOT content generated, printing...');
                 
-                const result = await window.require('electron').ipcRenderer.invoke('auto-silent-print', kotContent, 'kot');
+                const result = await window.require('electron').ipcRenderer.invoke('silent-print-kot', kotContent);
                 
                 if (result.success) {
                     kotsPrinted++;

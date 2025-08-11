@@ -2722,7 +2722,7 @@ class POSApp {
                 </html>
             `;
 
-            const result = await ipcRenderer.invoke('auto-silent-print', testBillContent, 'Debug');
+            const result = await ipcRenderer.invoke('silent-print-bill', testBillContent);
             
             if (result.success) {
                 console.log(`✅ DEBUG: Auto-silent print successful to ${result.printer}`);
@@ -2768,23 +2768,26 @@ class POSApp {
                 // SPEED OPTIMIZATION: Reduced delay between prints for instant printing
                 await new Promise(resolve => setTimeout(resolve, 200));
                 
-                // Print Bill using auto-silent method
+                // Print Bill using silent print method (corrected IPC call)
                 console.log('Auto-printing Bill...');
-                const billResult = await ipcRenderer.invoke('auto-silent-print', billContent, 'Bill');
+                console.log('📋 Calling silent-print-bill IPC handler...');
+                const billResult = await ipcRenderer.invoke('silent-print-bill', billContent);
+                console.log('📋 Bill print result:', billResult);
                 
-                // Check if we should fallback to preview mode for bill
-                if (!billResult.success && billResult.fallbackToPreview) {
-                    console.log('🖨️ No printer available - using preview mode for Bill');
+                // Check if bill print was successful
+                if (!billResult.success) {
+                    console.log('🖨️ Silent print failed - using preview mode for Bill');
                     await this.printCustomerBill(); // Use preview mode
                     console.log('✅ Bill printed successfully using preview mode');
                     return; // Success via preview mode
                 }
                 
                 if (!billResult.success) {
+                    console.log('🖨️ Bill print failed:', billResult.error);
                     throw new Error(`Bill print failed: ${billResult.error}`);
                 }
                 
-                console.log('✅ Bill printed successfully to:', billResult.printer);
+                console.log('✅ Bill printed successfully');
                 console.log('✅ Order printed successfully - both KOT and Bill');
                 return; // Success - exit retry loop
                 
@@ -2818,13 +2821,13 @@ class POSApp {
             // Small delay between prints to avoid printer conflicts
             await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // Print Bill using enhanced method
+            // Print Bill using silent print method (corrected IPC call)
             console.log('Printing Bill...');
-            const billResult = await ipcRenderer.invoke('enhanced-silent-print', billContent, 'Bill');
+            const billResult = await ipcRenderer.invoke('silent-print-bill', billContent);
             if (!billResult.success) {
                 throw new Error(`Bill print failed: ${billResult.error}`);
             }
-            console.log('Bill printed successfully to:', billResult.printer);
+            console.log('Bill printed successfully');
             
         } catch (error) {
             console.error('Enhanced printing error:', error);
@@ -3007,8 +3010,8 @@ class POSApp {
                 </html>
             `;
             
-            console.log('Sending auto-silent test print...');
-            const result = await ipcRenderer.invoke('auto-silent-print', testContent, 'Test');
+            console.log('Sending silent test print...');
+            const result = await ipcRenderer.invoke('silent-print-bill', testContent);
             
             if (result.success) {
                 alert(`✅ Auto-Silent Test Print Successful!\n\n• Printer: ${result.printer}\n• No dialogs appeared (Silent Mode ✓)\n• Enhanced fonts applied (16px base)\n\nIf you don't see the printout:\n• Check printer power and paper\n• Verify printer driver installation\n• Check USB/network connection\n• Try restarting the printer`);
@@ -3203,7 +3206,7 @@ class POSApp {
                 // Try thermal print first
                 const kitchenKotContent = this.generateKOTContent(kitchenItems, 'KITCHEN KOT');
                 console.log('� Attempting thermal print for Kitchen KOT...');
-                const kotResult = await ipcRenderer.invoke('auto-silent-print', kitchenKotContent, 'Kitchen KOT');
+                const kotResult = await ipcRenderer.invoke('silent-print-kot', kitchenKotContent);
                 console.log('🚨 CRITICAL: Kitchen KOT IPC call completed, result:', JSON.stringify(kotResult));
                 
                 if (kotResult.success) {
@@ -3237,7 +3240,7 @@ class POSApp {
                 // Try thermal print first
                 const drinksKotContent = this.generateKOTContent(drinksItems, 'DRINKS KOT');
                 console.log('� Attempting thermal print for Drinks KOT...');
-                const kotResult = await ipcRenderer.invoke('auto-silent-print', drinksKotContent, 'Drinks KOT');
+                const kotResult = await ipcRenderer.invoke('silent-print-kot', drinksKotContent);
                 console.log('🚨 CRITICAL: Drinks KOT IPC call completed, result:', JSON.stringify(kotResult));
                 
                 if (kotResult.success) {
