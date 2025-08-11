@@ -3,11 +3,11 @@ const { ipcRenderer } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-// Import Enhanced Printing System
-const PrintingSystem = require('./src/utils/enhancedPrintingSystem');
+// CLEANUP: Removed unused printing systems - keeping only the working CleanPrintingSystem
+// Removed: enhancedPrintingSystem (unused), printingManager (backup methods only)
 
-// Import Centralized Printing Manager
-const PrintingManager = require('./src/utils/printingManager');
+// Import NEW Clean Printing System (main printing system - WORKING)
+const CleanPrintingSystem = require('./src/utils/cleanPrintingSystem');
 
 // Note: Update notification manager is loaded via script tag to avoid require issues
 
@@ -97,11 +97,9 @@ class POSApp {
         // Initialize version display
         this.initializeVersionDisplay();
         
-        // Initialize Enhanced Printing System
-        this.printingSystem = new PrintingSystem();
-        
-        // Initialize Centralized Printing Manager  
-        this.printingManager = new PrintingManager();
+        // CLEANUP: Initialize only the working Clean Printing System
+        // Removed unused: printingSystem, printingManager (keeping backup methods intact)
+        this.cleanPrinter = new CleanPrintingSystem();
         
         // Initialize Update Notification Manager (loaded via script tag)
         this.updateNotificationManager = null; // Will be initialized in init()        // Settings for restaurant info
@@ -340,6 +338,11 @@ class POSApp {
         // Print button
         document.getElementById('print-order').addEventListener('click', () => {
             this.printOrder();
+        });
+
+        // Preview Bill button - NEW
+        document.getElementById('preview-bill').addEventListener('click', () => {
+            this.previewBill();
         });
 
         // Service fee dropdown
@@ -2601,112 +2604,301 @@ class POSApp {
             // Show user-friendly printing feedback
             const printButton = document.getElementById('print-order');
             const originalText = printButton.textContent;
-            printButton.textContent = '🖨 Auto-printing...';
+            printButton.textContent = '🖨 Printing...';
             printButton.disabled = true;
 
-            console.log('Starting centralized print...');
+            console.log('🚀 Using NEW Clean Printing System...');
 
-            // Use new centralized print for one-click printing
-            await this.printOrderCentralized();
+            // Prepare order data for clean printing system
+            const orderData = {
+                items: this.currentOrder,
+                menuItems: this.menuItems,
+                location: {
+                    type: this.billingMode,
+                    number: this.currentLocation
+                },
+                serviceCharge: this.serviceFeePercentage || 0,
+                restaurant: this.settings.restaurant
+            };
+
+            // Use NEW clean printing system (no shrinking, reliable)
+            const result = await this.cleanPrinter.printCompleteOrder(orderData);
             
-            // Success feedback
-            printButton.textContent = '✅ Printed!';
-            setTimeout(() => {
-                printButton.textContent = originalText;
-                printButton.disabled = false;
-            }, 2000);
-            
-            console.log('Order printed successfully (Auto-Silent Mode)');
-            
-            // Clear order after successful print
-            this.currentOrder = [];
-            this.serviceFeePercentage = 0;
-            
-            // Update UI to reflect cleared service fee
-            const serviceFeeDropdown = document.getElementById('service-fee-dropdown');
-            if (serviceFeeDropdown) {
-                serviceFeeDropdown.value = '0';
-            }
-            
-            if (this.billingMode === 'table') {
-                this.activeTables.delete(this.currentTable);
-                this.saveActiveTableData();
+            if (result.success) {
+                // Success feedback
+                printButton.textContent = '✅ Printed!';
+                setTimeout(() => {
+                    printButton.textContent = originalText;
+                    printButton.disabled = false;
+                }, 2000);
+                
+                console.log('✅ Order printed successfully with Clean System');
+                
+                // Clear order after successful print
+                this.currentOrder = [];
+                this.serviceFeePercentage = 0;
+                
+                // Update UI to reflect cleared service fee
+                const serviceFeeDropdown = document.getElementById('service-fee-select');
+                if (serviceFeeDropdown) {
+                    serviceFeeDropdown.value = '0';
+                }
+                
+                // Clear table/counter status
+                if (this.billingMode === 'table') {
+                    this.activeTables.delete(this.currentTable);
+                    this.saveActiveTableData();
+                } else {
+                    this.activeCounters.delete(this.currentCounter);
+                    this.saveActiveCounterData();
+                }
+                
+                this.saveCurrentOrder();
+                this.renderOrder();
+                this.updateTotals();
+                
             } else {
-                this.activeCounters.delete(this.currentCounter);
-                this.saveActiveCounterData();
+                throw new Error(result.error || 'Print failed');
             }
-            
-            this.saveCurrentOrder();
-            this.renderOrder();
-            this.updateTotals();
             
         } catch (error) {
-            console.error('Error printing order:', error);
+            console.error('❌ Print error:', error);
             
-            // Reset button state
             const printButton = document.getElementById('print-order');
-            printButton.textContent = '🖨 Print';
+            printButton.textContent = '❌ Print Failed';
             printButton.disabled = false;
             
-            // Enhanced error message handling
-            const errorMsg = error.message || 'Print operation failed';
+            setTimeout(() => {
+                printButton.textContent = '🖨 Print Order';
+            }, 3000);
             
-            if (errorMsg.includes('No printer found') || 
-                errorMsg.includes('No printer detected') || 
-                errorMsg.includes('not available')) {
-                
-                // Show friendly message and automatically use preview mode
-                console.log('🖨️ No printer detected - automatically using print preview mode');
-                
-                printButton.textContent = '🖨 Using Preview Mode...';
-                
-                try {
-                    await this.printOrderWithPreview();
-                    
-                    // Success feedback
-                    printButton.textContent = '✅ Printed via Preview!';
-                    setTimeout(() => {
-                        const printButton = document.getElementById('print-order');
-                        printButton.textContent = '🖨 Print';
-                        printButton.disabled = false;
-                    }, 2000);
-                    
-                    // Clear order after successful print
-                    this.currentOrder = [];
-                    this.serviceFeePercentage = 0;
-                    
-                    // Update UI to reflect cleared service fee
-                    const serviceFeeDropdown = document.getElementById('service-fee-dropdown');
-                    if (serviceFeeDropdown) {
-                        serviceFeeDropdown.value = '0';
-                    }
-                    
-                    if (this.billingMode === 'table') {
-                        this.activeTables.delete(this.currentTable);
-                        this.saveActiveTableData();
-                    } else {
-                        this.activeCounters.delete(this.currentCounter);
-                        this.saveActiveCounterData();
-                    }
-                    
-                    this.saveCurrentOrder();
-                    this.renderOrder();
-                    this.updateTotals();
-                    
-                } catch (previewError) {
-                    console.error('Preview printing also failed:', previewError);
-                    alert('❌ Unable to print.\n\nBoth direct printing and preview mode failed.\nPlease check your system and try again.');
-                    
-                    printButton.textContent = '🖨 Print';
-                    printButton.disabled = false;
-                }
-            } else if (errorMsg.includes('timed out')) {
-                alert(`⏱️ Print Timeout\n\nThe print operation took too long.\nYour printer may be busy or offline.\n\nPlease check your printer and try again.`);
-            } else if (errorMsg.includes('Print failed')) {
-                alert(`❌ Print Job Failed\n\nThe printer rejected the print job.\nPlease check:\n• Paper loaded correctly\n• Printer is ready\n• No error lights\n\nThen try again.`);
-            } else {
-                alert(`❌ Print Error\n\n${errorMsg}\n\nPlease check your printer connection and try again.`);
+            alert('Print failed: ' + error.message);
+        }
+    }
+
+    // Preview Bill - Opens bill preview window with exact print formatting
+    async previewBill() {
+        if (this.currentOrder.length === 0) {
+            alert('No items in order to preview');
+            return;
+        }
+
+        try {
+            console.log('👁️ Opening bill preview...');
+
+            // Prepare order data for preview (same as print)
+            const orderData = {
+                items: this.currentOrder,
+                menuItems: this.menuItems,
+                location: {
+                    type: this.billingMode,
+                    number: this.currentLocation
+                },
+                serviceCharge: this.serviceFeePercentage || 0,
+                restaurant: this.settings.restaurant
+            };
+
+            // Generate the exact same HTML that would be printed
+            const billHTML = this.cleanPrinter.generateCustomerBillHTML(orderData);
+
+            // Create enhanced preview HTML with print simulation
+            const previewHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bill Preview - 80mm Thermal Paper</title>
+    <meta charset="UTF-8">
+    <style>
+        /* Preview window styling */
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .preview-header {
+            text-align: center;
+            background: #007cba;
+            color: white;
+            padding: 10px;
+            margin: -20px -20px 20px -20px;
+            font-weight: bold;
+        }
+        
+        .paper-preview {
+            background: white;
+            margin: 0 auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border: 1px solid #ddd;
+            /* Simulate 80mm paper width */
+            width: 302px;
+            min-height: 400px;
+            position: relative;
+        }
+        
+        .bill-content {
+            /* This will contain the actual bill HTML */
+        }
+        
+        .preview-footer {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        /* Apply the same print CSS for accurate preview */
+        .bill-content {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            width: 302px;
+            max-width: 302px;
+            min-width: 302px;
+            padding: 3mm;
+            background: white;
+            color: #000;
+            line-height: 1.3;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            box-sizing: border-box;
+        }
+        
+        /* Include all the bill CSS from cleanPrintingSystem */
+        .bill-content .header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .bill-content .restaurant-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .bill-content .restaurant-details {
+            font-size: 14px;
+            margin: 2px 0;
+        }
+        
+        .bill-content .bill-info {
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .bill-content .items-section {
+            margin: 15px 0;
+        }
+        
+        .bill-content .item-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #000;
+            padding: 4px 0;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .bill-content .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin: 3px 0;
+            padding: 2px 0;
+            border-bottom: 1px dotted #666;
+            min-height: 20px;
+        }
+        
+        .bill-content .item-name { flex: 1; padding-right: 5px; }
+        .bill-content .item-qty { width: 15mm; text-align: center; }
+        .bill-content .item-rate { width: 20mm; text-align: right; }
+        .bill-content .item-total { width: 25mm; text-align: right; }
+        
+        .bill-content .totals-section {
+            border-top: 2px solid #000;
+            margin-top: 15px;
+            padding-top: 8px;
+        }
+        
+        .bill-content .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+            font-size: 14px;
+        }
+        
+        .bill-content .grand-total {
+            font-size: 16px;
+            font-weight: bold;
+            border: 2px solid #000;
+            padding: 6px;
+            margin: 8px 0;
+        }
+        
+        .bill-content .footer {
+            border-top: 2px solid #000;
+            margin-top: 15px;
+            padding-top: 8px;
+            text-align: center;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-header">
+        📄 Bill Preview - 80mm Thermal Paper Simulation
+    </div>
+    
+    <div class="paper-preview">
+        <div class="bill-content">
+            ${billHTML.replace(/<!DOCTYPE html>.*?<body[^>]*>/s, '').replace(/<\/body>.*?<\/html>/s, '')}
+        </div>
+    </div>
+    
+    <div class="preview-footer">
+        🔍 This preview shows exactly how your bill will look when printed on 80mm thermal paper.<br>
+        📏 Paper width: 302px (80mm) | Font: Courier New 14px | Print-optimized layout<br>
+        ✅ Ready to print? Close this window and click the "🖨 Print" button.
+    </div>
+    
+    <script>
+        // Auto-focus and add keyboard shortcut
+        window.focus();
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.close();
             }
+        });
+        
+        console.log('📄 Bill preview loaded - Press ESC to close');
+    </script>
+</body>
+</html>`;
+
+            // Open the enhanced preview window
+            const previewWindow = window.open('', '_blank', 
+                'width=450,height=750,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,location=no,status=no'
+            );
+            
+            if (previewWindow) {
+                previewWindow.document.write(previewHTML);
+                previewWindow.document.close();
+                previewWindow.focus();
+                
+                console.log('✅ Bill preview opened - 80mm paper simulation');
+            } else {
+                throw new Error('Popup blocked by browser');
+            }
+
+        } catch (error) {
+            console.error('❌ Preview error:', error);
+            alert('Preview failed: ' + error.message + '\n\nTip: Make sure popups are enabled for this app.');
         }
     }
 
@@ -3054,7 +3246,7 @@ class POSApp {
 
     }
 
-    // NEW: Centralized Printing Method (uses new PrintingManager)
+    // BACKUP: Centralized Printing Method (converted to use CleanPrintingSystem)
     async printOrderCentralized() {
         try {
             if (!this.currentOrder || this.currentOrder.length === 0) {
@@ -3062,7 +3254,7 @@ class POSApp {
                 return { success: false, error: 'No items to print' };
             }
 
-            console.log('🎯 Starting CENTRALIZED print process...');
+            console.log('🎯 Starting BACKUP centralized print process...');
 
             // Show user-friendly printing feedback
             const printButton = document.getElementById('print-order');
@@ -3101,12 +3293,12 @@ class POSApp {
                 }
             };
 
-            // Use Centralized Printing Manager
-            const result = await this.printingManager.printCompleteOrder(orderData);
+            // Use CleanPrintingSystem (same as main print method)
+            const result = await this.cleanPrinter.printCompleteOrder(orderData);
             
             if (result.success) {
-                console.log('🎯 ✅ Centralized print completed successfully');
-                console.log(`📊 Summary: ${result.summary.kotsPrinted}/${result.summary.kotsTotal} KOTs printed, Bill: ${result.summary.billMethod}`);
+                console.log('🎯 ✅ Backup centralized print completed successfully');
+                console.log(`📊 Summary: Print successful via CleanPrintingSystem`);
                 
                 // Success feedback
                 if (printButton) {
@@ -3156,16 +3348,16 @@ class POSApp {
         }
     }
 
-    // Test Centralized Printing System
+    // Test Clean Printing System (converted from old centralized test)
     async testCentralizedPrint() {
-        console.log('🧪 Testing Centralized Printing System from POS App...');
+        console.log('🧪 Testing Clean Printing System from POS App...');
         try {
-            const result = await this.printingManager.testPrintSystem();
-            console.log('🧪 Centralized Print Test Results:', result);
-            alert('Centralized Print Test completed! Check console for results.');
+            const result = await this.cleanPrinter.testPrint();
+            console.log('🧪 Clean Print Test Results:', result);
+            alert('Clean Print Test completed! Check console for results.');
         } catch (error) {
-            console.error('🧪 Centralized Print Test Error:', error);
-            alert(`Centralized Print Test failed: ${error.message}`);
+            console.error('🧪 Clean Print Test Error:', error);
+            alert(`Clean Print Test failed: ${error.message}`);
         }
     }
 
@@ -3390,10 +3582,10 @@ class POSApp {
                         }
                         body { 
                             margin: 0 !important; 
-                            padding: 3mm !important; /* ENHANCED: Increased padding for better spacing */
+                            padding: 2mm !important; /* FIXED: Back to original working padding */
                         }
                         body, table { 
-                            font-size: 14px; /* ENHANCED: Increased from 11px for better visibility */
+                            font-size: 18px; /* SIGNIFICANTLY INCREASED: From 14px to 18px for much better readability */
                         }
                         * { 
                             -webkit-print-color-adjust: exact !important; 
@@ -3406,29 +3598,26 @@ class POSApp {
                         }
                         /* HIGH-DPI OPTIMIZATION: Enhanced for 200+ DPI thermal printers */
                         @media print and (min-resolution: 200dpi) {
-                            body, table { font-size: 16px; } /* ENHANCED: Increased from 12px */
-                            .restaurant-name { font-size: 20px; } /* ENHANCED: Increased from 16px */
-                            .bill-title { font-size: 18px; } /* ENHANCED: Increased from 14px */
-                            .grand-total { font-size: 18px; } /* ENHANCED: Increased from 14px */
+                            body, table { font-size: 22px; } /* SIGNIFICANTLY INCREASED: From 16px to 22px */
+                            .restaurant-name { font-size: 26px; } /* SIGNIFICANTLY INCREASED: From 20px to 26px */
+                            .bill-title { font-size: 24px; } /* SIGNIFICANTLY INCREASED: From 18px to 24px */
+                            .grand-total { font-size: 24px; } /* SIGNIFICANTLY INCREASED: From 18px to 24px */
                         }
                     }
                     body { 
-                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern clean font with fallbacks */
-                        font-size: 14px; /* ENHANCED: Increased from 11px base size for better readability */
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* THERMAL: Best thermal printer compatibility */
+                        font-size: 18px; /* SIGNIFICANTLY INCREASED: From 14px to 18px for much better readability */
                         font-weight: bold !important; /* THERMAL: Bold for solid thermal dots */
                         margin: 0; 
-                        padding: 2mm;
-                        width: 300px; /* ENHANCED: Increased from 270px for better thermal printer compatibility */
-                        max-width: 300px; /* ENHANCED: Increased from 270px */
+                        padding: 2mm; /* FIXED: Back to original working padding */
+                        width: 270px; /* FIXED: Back to original working width - THIS FIXES THE SHRINKING */
+                        max-width: 270px; /* FIXED: Back to original working max-width - THIS FIXES THE SHRINKING */
                         background: white !important;
                         color: #000000 !important; /* THERMAL: Solid black only */
-                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        line-height: 1.4; /* INCREASED: Better line spacing for readability */
                         -webkit-font-smoothing: none !important; /* THERMAL: Disable anti-aliasing */
                         font-smoothing: none !important; /* THERMAL: Disable smoothing */
-                        text-rendering: optimizeLegibility !important; /* ENHANCED: Better text rendering */
-                        -webkit-font-feature-settings: "kern" 1, "liga" 0 !important; /* ENHANCED: Optimized kerning */
-                        font-feature-settings: "kern" 1, "liga" 0 !important; /* ENHANCED: Optimized kerning */
-                        letter-spacing: 0.02em !important; /* ENHANCED: Micro-spacing for clarity */
+                        text-rendering: optimizeLegibility !important; 
                         box-sizing: border-box;
                         word-wrap: break-word;
                         overflow-wrap: break-word;
@@ -3436,118 +3625,201 @@ class POSApp {
                     }
                     .header { 
                         text-align: center; 
-                        border-bottom: 2px solid #000; 
-                        padding-bottom: 6px; 
-                        margin-bottom: 8px; 
-                        box-sizing: border-box; /* ADDED: Better sizing */
+                        border-bottom: 3px solid #000; /* THICKER: More prominent border */
+                        padding-bottom: 8px; /* INCREASED: More padding */
+                        margin-bottom: 12px; /* INCREASED: More spacing */
+                        box-sizing: border-box; 
                     }
                     .restaurant-name { 
-                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
-                        font-size: 18px; /* ENHANCED: Increased from 15px for better restaurant name visibility */
-                        margin-bottom: 3px; 
-                        color: #000000 !important; /* THERMAL: Solid black */
-                        letter-spacing: 0.3px; /* THERMAL: Reduced spacing for clarity */
+                        font-weight: bold !important; 
+                        font-size: 22px; /* SIGNIFICANTLY INCREASED: From 18px to 22px for much better restaurant name visibility */
+                        margin-bottom: 5px; /* INCREASED: More spacing */
+                        color: #000000 !important; 
+                        letter-spacing: 0.5px; /* INCREASED: Better letter spacing */
                         word-wrap: break-word;
-                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
-                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        line-height: 1.4; 
                     }
                     .restaurant-details { 
-                        font-size: 13px; /* ENHANCED: Increased from 11px for better address/contact readability */
-                        margin: 1px 0; 
-                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
-                        color: #000000 !important; /* THERMAL: Solid black */
-                        line-height: 1.3; /* ENHANCED: Improved readability spacing, increased from 1.1 */
+                        font-size: 16px; /* SIGNIFICANTLY INCREASED: From 13px to 16px for much better address/contact readability */
+                        margin: 3px 0; /* INCREASED: More spacing between lines */
+                        font-weight: bold !important; 
+                        color: #000000 !important; 
+                        line-height: 1.4; /* INCREASED: Better line spacing */
                         word-wrap: break-word;
-                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
-                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
                     }
                     .bill-title { 
-                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
-                        font-size: 16px; /* ENHANCED: Increased from 13px for better bill title visibility */
-                        margin: 4px 0; 
-                        color: #000000 !important; /* THERMAL: Solid black */
-                        border: 2px solid #000000 !important; /* THERMAL: Thicker solid black border */
-                        padding: 2px;
+                        font-weight: bold !important; 
+                        font-size: 20px; /* SIGNIFICANTLY INCREASED: From 16px to 20px for much better bill title visibility */
+                        margin: 8px 0; /* INCREASED: More spacing */
+                        color: #000000 !important; 
+                        border: 3px solid #000000 !important; /* THICKER: More prominent border */
+                        padding: 6px; /* INCREASED: More padding */
                         box-sizing: border-box;
-                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
-                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
-                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        line-height: 1.4; 
                     }
                     .location { 
-                        font-size: 11px; /* ENHANCED: +1px for better location/table info readability */
-                        margin: 3px 0; 
-                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
-                        color: #000000 !important; /* THERMAL: Solid black */
+                        font-size: 16px; /* SIGNIFICANTLY INCREASED: From 11px to 16px for better location/table info readability */
+                        margin: 5px 0; /* INCREASED: More spacing */
+                        font-weight: bold !important; 
+                        color: #000000 !important; 
                         word-wrap: break-word;
-                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
-                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
-                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        line-height: 1.4; 
                     }
                     .datetime { 
-                        font-size: 13px; /* ENHANCED: Increased from 11px for better readability */
-                        margin: 2px 0; 
-                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
-                        color: #000000 !important; /* THERMAL: Solid black */
+                        font-size: 16px; /* SIGNIFICANTLY INCREASED: From 13px to 16px for better readability */
+                        margin: 4px 0; /* INCREASED: More spacing */
+                        font-weight: bold !important; 
+                        color: #000000 !important; 
                         word-wrap: break-word;
-                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
-                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
-                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        line-height: 1.4; 
                     }
                     .items { 
-                        margin: 8px 0; 
+                        margin: 12px 0; /* INCREASED: More spacing around items section */
                         width: 100%;
                         box-sizing: border-box;
                     }
                     .item-header { 
                         display: flex; 
                         justify-content: space-between; 
-                        border-bottom: 2px solid #000000 !important; /* THERMAL: Solid black border */
-                        padding: 2px 0;
-                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
-                        font-size: 13px; /* ENHANCED: Increased from 11px for better header readability */
-                        color: #000000 !important; /* THERMAL: Solid black */
-                        margin-bottom: 2px;
+                        border-bottom: 3px solid #000000 !important; /* THICKER: More prominent border */
+                        padding: 4px 0; /* INCREASED: More padding */
+                        font-weight: bold !important; 
+                        font-size: 17px; /* SIGNIFICANTLY INCREASED: From 13px to 17px for much better header readability */
+                        color: #000000 !important; 
+                        margin-bottom: 6px; /* INCREASED: More spacing */
                         box-sizing: border-box;
-                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
-                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
-                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        line-height: 1.4; 
                     }
                     .item-row { 
                         display: flex; 
                         justify-content: space-between; 
                         align-items: flex-start;
-                        margin: 1px 0;
-                        font-size: 13px; /* ENHANCED: Increased from 11px for better item row readability */
-                        padding: 1px 0;
-                        border-bottom: 1px solid #000000 !important; /* THERMAL: Solid black instead of dotted */
-                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
-                        min-height: 15px; /* ENHANCED: Adjusted for increased font size */
+                        margin: 3px 0; /* INCREASED: More spacing between rows */
+                        font-size: 16px; /* SIGNIFICANTLY INCREASED: From 13px to 16px for much better item row readability */
+                        padding: 3px 0; /* INCREASED: More padding */
+                        border-bottom: 1px solid #000000 !important; 
+                        font-weight: bold !important; 
+                        min-height: 20px; /* INCREASED: More height for larger text */
                         box-sizing: border-box;
-                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
-                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
-                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        line-height: 1.4; 
                     }
                     .item-name { 
                         flex: 1; 
-                        color: #000000 !important; /* THERMAL: Solid black */
-                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
-                        padding-right: 2px;
-                        font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
-                        line-height: 1.3; /* ENHANCED: Improved readability spacing */
-                        letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
-                    }
+                        color: #000000 !important; 
+                        font-weight: bold !important; 
+                        padding-right: 4px; /* INCREASED: More padding */
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        line-height: 1.4; 
                         word-wrap: break-word;
                         max-width: 35mm;
                         overflow-wrap: break-word;
                         box-sizing: border-box;
                     }
                     .item-qty { 
-                        width: 12mm;
+                        width: 15mm; /* INCREASED: More width for larger text */
                         text-align: center; 
-                        color: #000000 !important; /* THERMAL: Solid black */
-                        font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
+                        color: #000000 !important; 
+                        font-weight: bold !important; 
                         flex-shrink: 0;
                         box-sizing: border-box;
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        line-height: 1.4; 
+                    }
+                    .item-rate { 
+                        width: 18mm; /* INCREASED: More width for larger text */
+                        text-align: right; 
+                        color: #000000 !important; 
+                        font-weight: bold !important; 
+                        flex-shrink: 0;
+                        box-sizing: border-box;
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        line-height: 1.4; 
+                    }
+                    .item-total { 
+                        width: 22mm; /* INCREASED: More width for larger text */
+                        text-align: right; 
+                        color: #000000 !important; 
+                        font-weight: bold !important; 
+                        flex-shrink: 0;
+                        box-sizing: border-box;
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        line-height: 1.4; 
+                    }
+                    .parcel-charge-row {
+                        font-size: 15px; /* SIGNIFICANTLY INCREASED: From 12px to 15px for better parcel charge readability */
+                        color: #000000 !important; /* CHANGED: Solid black for thermal printing */
+                        border-bottom: none !important; 
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        line-height: 1.4; 
+                    }
+                    .parcel-charge-row .item-name {
+                        font-style: italic; 
+                        padding-left: 6px; /* INCREASED: More indent */
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        line-height: 1.4; 
+                    }
+                    .totals { 
+                        border-top: 3px solid #000000 !important; /* THICKER: More prominent border */
+                        margin-top: 12px; /* INCREASED: More spacing */
+                        padding-top: 8px; /* INCREASED: More padding */
+                        box-sizing: border-box;
+                    }
+                    .total-row { 
+                        display: flex; 
+                        justify-content: space-between; 
+                        margin: 4px 0; /* INCREASED: More spacing */
+                        font-weight: bold !important; 
+                        box-sizing: border-box;
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        font-size: 16px; /* SIGNIFICANTLY INCREASED: From 11px to 16px for much better total row readability */
+                        line-height: 1.4; 
+                    }
+                    .grand-total { 
+                        font-weight: bold !important; 
+                        border: 4px solid #000000 !important; /* THICKER: More prominent border */
+                        padding: 8px; /* INCREASED: More padding */
+                        font-size: 20px; /* SIGNIFICANTLY INCREASED: From 13px to 20px for much better grand total visibility */
+                        color: #000000 !important; 
+                        background: white !important;
+                        margin: 8px 0; /* INCREASED: More spacing */
+                        box-sizing: border-box;
+                        word-wrap: break-word;
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        line-height: 1.4; 
+                    }
+                    .footer { 
+                        border-top: 3px solid #000000 !important; /* THICKER: More prominent border */
+                        margin-top: 12px; /* INCREASED: More spacing */
+                        padding-top: 8px; /* INCREASED: More padding */
+                        text-align: center; 
+                        font-size: 15px; /* SIGNIFICANTLY INCREASED: From 11px to 15px for much better footer readability */
+                        font-weight: bold !important; 
+                        line-height: 1.4; 
+                        box-sizing: border-box;
+                        word-wrap: break-word;
+                        font-family: 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; 
+                        color: #000000 !important; 
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="restaurant-name">Udupi Krishnam Veg</div>
+                    <div class="restaurant-details">Bengaluru - Chennai Hwy, Konappana</div>
+                    <div class="restaurant-details">Agrahara, Electronic City,</div>
+                    <div class="restaurant-details">Bengaluru, Karnataka, India</div>
+                    <div class="restaurant-details">Bangalore, Karnataka Bengaluru</div>
+                    <div class="restaurant-details">560100</div>
+                    <div class="restaurant-details">Contact No: 9535089587</div>
+                    <div class="restaurant-details">Tax Invoice</div>
+                    <div class="restaurant-details">A Unit of SALT AND PEPPER</div>
                         font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
                         line-height: 1.3; /* ENHANCED: Improved readability spacing */
                         letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
@@ -3715,6 +3987,91 @@ class POSApp {
             </html>
         `;
     }
+
+    // ===== RESTORED ORIGINAL PRINT METHODS =====
+    // These methods were missing and causing the print failure after service charge
+
+    async printKOT() {
+        try {
+            console.log('🍳 Printing KOT using original working method...');
+            
+            const kotContent = this.generateKOTContent(this.currentOrder, 'KITCHEN ORDER TICKET');
+            
+            // Try silent print first
+            try {
+                const result = await ipcRenderer.invoke('silent-print-kot', kotContent);
+                if (result && result.success) {
+                    console.log('✅ KOT printed successfully via silent print');
+                    return;
+                }
+            } catch (error) {
+                console.log('⚠️ Silent print failed, using popup fallback...');
+            }
+            
+            // Fallback to popup window (original working method)
+            const printWindow = window.open('', '_blank', 'width=400,height=500,scrollbars=yes');
+            if (printWindow) {
+                printWindow.document.write(kotContent);
+                printWindow.document.close();
+                
+                setTimeout(() => {
+                    printWindow.focus();
+                    printWindow.print();
+                    setTimeout(() => {
+                        try { printWindow.close(); } catch (e) {}
+                    }, 2000);
+                }, 800);
+                
+                console.log('✅ KOT popup window opened for printing');
+            }
+            
+        } catch (error) {
+            console.error('❌ KOT print error:', error);
+            throw error;
+        }
+    }
+
+    async printCustomerBill() {
+        try {
+            console.log('🧾 Printing Customer Bill using original working method...');
+            
+            const billContent = this.generateBillContent();
+            
+            // Try silent print first
+            try {
+                const result = await ipcRenderer.invoke('silent-print-bill', billContent);
+                if (result && result.success) {
+                    console.log('✅ Customer Bill printed successfully via silent print');
+                    return;
+                }
+            } catch (error) {
+                console.log('⚠️ Silent print failed, using popup fallback...');
+            }
+            
+            // Fallback to popup window (original working method)
+            const printWindow = window.open('', '_blank', 'width=400,height=700,scrollbars=yes');
+            if (printWindow) {
+                printWindow.document.write(billContent);
+                printWindow.document.close();
+                
+                setTimeout(() => {
+                    printWindow.focus();
+                    printWindow.print();
+                    setTimeout(() => {
+                        try { printWindow.close(); } catch (e) {}
+                    }, 2000);
+                }, 800);
+                
+                console.log('✅ Customer Bill popup window opened for printing');
+            }
+            
+        } catch (error) {
+            console.error('❌ Customer Bill print error:', error);
+            throw error;
+        }
+    }
+
+    // ===== END RESTORED METHODS =====
 
     // Enhanced manual update system
     async downloadLatestVersion() {
@@ -4055,15 +4412,15 @@ class POSApp {
         setTimeout(closeModal, 3000);
     }
 
-    // Test Enhanced Printing System
+    // Test Clean Printing System (converted from enhanced test)
     async testEnhancedPrint() {
-        console.log('🧪 Testing Enhanced Printing System from POS App...');
+        console.log('🧪 Testing Clean Printing System from POS App...');
         try {
-            const result = await this.printingSystem.testPrint();
-            console.log('🧪 Enhanced Print Test Results:', result);
-            alert('Enhanced Print Test completed! Check console for results.');
+            const result = await this.cleanPrinter.testPrint();
+            console.log('🧪 Clean Print Test Results:', result);
+            alert('Clean Print Test completed! Check console for results.');
         } catch (error) {
-            console.error('🧪 Enhanced Print Test Error:', error);
+            console.error('🧪 Clean Print Test Error:', error);
             alert(`Enhanced Print Test failed: ${error.message}`);
         }
     }

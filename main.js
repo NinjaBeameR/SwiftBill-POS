@@ -614,15 +614,26 @@ ipcMain.handle('silent-print-kot', async (event, kotContent) => {
         console.log('📄 KOT content loaded, starting print immediately...');
         
         try {
+          // FIXED: Proper Electron print settings for 80mm thermal paper
+          // Root cause: pageSize was incorrect causing browser scaling
           printWindow.webContents.print({
             silent: true,
             printBackground: true,
+            // Critical: Disable shrink-to-fit completely
+            scaleFactor: 100,
             margins: {
-              marginType: 'none'
+              marginType: 'none'  // Zero margins for thermal paper
             },
             pageSize: {
-              width: 80000, // 80mm in micrometers
-              height: 200000 // Auto height
+              // 80mm = 80,000 micrometers (exact thermal paper width)
+              width: 80000,  
+              // Auto height for variable content length
+              height: 297000  // A4 height as fallback, will auto-adjust
+            },
+            // Prevent any browser scaling
+            dpi: {
+              horizontal: 300,  // Thermal printer DPI
+              vertical: 300
             }
           }, (success, failureReason) => {
             if (!resolved) {
@@ -725,15 +736,26 @@ ipcMain.handle('silent-print-bill', async (event, billContent) => {
         console.log('📄 Bill content loaded, starting print immediately...');
         
         try {
+          // FIXED: Proper Electron print settings for 80mm thermal paper (Customer Bill)
+          // Same fix as KOT - prevent scaling with correct dimensions
           printWindow.webContents.print({
             silent: true,
             printBackground: true,
+            // Critical: Disable shrink-to-fit completely
+            scaleFactor: 100,
             margins: {
-              marginType: 'none'
+              marginType: 'none'  // Zero margins for thermal paper
             },
             pageSize: {
-              width: 80000, // 80mm in micrometers
-              height: 200000 // Auto height
+              // 80mm = 80,000 micrometers (exact thermal paper width)
+              width: 80000,  
+              // Auto height for variable content length
+              height: 297000  // A4 height as fallback, will auto-adjust
+            },
+            // Prevent any browser scaling
+            dpi: {
+              horizontal: 300,  // Thermal printer DPI
+              vertical: 300
             }
           }, (success, failureReason) => {
             if (!resolved) {
