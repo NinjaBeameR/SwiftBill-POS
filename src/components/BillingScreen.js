@@ -221,123 +221,6 @@ class BillingScreen {
         }
     }
 
-    async autoSilentPrintKOTs() {
-        console.log('=== KOT PRINTING DEBUG START ===');
-        console.log('Current order items:', this.currentOrder.length);
-        
-        if (this.currentOrder.length === 0) {
-            console.log('❌ No items in order - skipping KOT');
-            return { success: true, kotsPrinted: 0, kotsTotal: 0 };
-        }
-        
-        // Split items by kotGroup - CHECK MENU ITEMS FOR PROPER CLASSIFICATION
-        const kitchenItems = [];
-        const drinksItems = [];
-        
-        console.log('--- ITEM CLASSIFICATION DEBUG ---');
-        this.currentOrder.forEach(orderItem => {
-            const menuItem = this.menuItems.find(mi => mi.id === orderItem.id);
-            console.log(`🔍 Item: ${orderItem.name} (ID: ${orderItem.id})`);
-            console.log(`   Menu Item Found: ${!!menuItem}`);
-            console.log(`   Menu Item kotGroup: ${menuItem?.kotGroup}`);
-            console.log(`   Order Item kotGroup: ${orderItem.kotGroup}`);
-            
-            if (menuItem) {
-                if (menuItem.kotGroup === 'kitchen') {
-                    kitchenItems.push(orderItem);
-                    console.log(`   ✅ Added to KITCHEN KOT`);
-                } else if (menuItem.kotGroup === 'drinks') {
-                    drinksItems.push(orderItem);
-                    console.log(`   ✅ Added to DRINKS KOT`);
-                } else {
-                    console.log(`   ⚠️ Unknown kotGroup: ${menuItem.kotGroup} - adding to KITCHEN`);
-                    kitchenItems.push(orderItem);
-                }
-            } else {
-                console.log(`   ❌ Menu item not found - adding to KITCHEN`);
-                kitchenItems.push(orderItem);
-            }
-        });
-        
-        console.log(`🍳 FINAL: Kitchen items: ${kitchenItems.length}`);
-        console.log(`☕ FINAL: Drinks items: ${drinksItems.length}`);
-        
-        let kotsPrinted = 0;
-        let kotsTotal = 0;
-        
-        // Print Kitchen KOT if items exist
-        if (kitchenItems.length > 0) {
-            kotsTotal++;
-            console.log('🍳 === KITCHEN KOT PRINTING START ===');
-            
-            try {
-                const kitchenOrderData = {
-                    tableNumber: this.currentTable,
-                    locationNumber: this.currentTable,
-                    locationType: 'table',
-                    items: kitchenItems,
-                    timestamp: new Date().toISOString(),
-                    kotType: 'kitchen'
-                };
-                
-                const kotContent = this.generateKOTContent(kitchenOrderData);
-                console.log('🍳 Kitchen KOT content generated, printing...');
-                
-                const result = await window.require('electron').ipcRenderer.invoke('silent-print-kot', kotContent);
-                
-                if (result.success) {
-                    kotsPrinted++;
-                    console.log('🍳 ✅ Kitchen KOT printed successfully');
-                } else {
-                    console.error('🍳 ❌ Kitchen KOT print failed:', result.error);
-                }
-            } catch (error) {
-                console.error('🍳 ❌ Kitchen KOT print error:', error);
-            }
-        }
-        
-        // Print Drinks KOT if items exist
-        if (drinksItems.length > 0) {
-            kotsTotal++;
-            console.log('☕ === DRINKS KOT PRINTING START ===');
-            
-            try {
-                const drinksOrderData = {
-                    tableNumber: this.currentTable,
-                    locationNumber: this.currentTable,
-                    locationType: 'table',
-                    items: drinksItems,
-                    timestamp: new Date().toISOString(),
-                    kotType: 'drinks'
-                };
-                
-                const kotContent = this.generateKOTContent(drinksOrderData);
-                console.log('☕ Drinks KOT content generated, printing...');
-                
-                const result = await window.require('electron').ipcRenderer.invoke('silent-print-kot', kotContent);
-                
-                if (result.success) {
-                    kotsPrinted++;
-                    console.log('☕ ✅ Drinks KOT printed successfully');
-                } else {
-                    console.error('☕ ❌ Drinks KOT print failed:', result.error);
-                }
-            } catch (error) {
-                console.error('☕ ❌ Drinks KOT print error:', error);
-            }
-        }
-        
-        console.log(`=== KOT PRINTING COMPLETE: ${kotsPrinted}/${kotsTotal} KOTs printed ===`);
-        
-        return {
-            success: kotsPrinted > 0,
-            kotsPrinted,
-            kotsTotal,
-            kitchenItems: kitchenItems.length,
-            drinksItems: drinksItems.length
-        };
-    }
-
     generateKOTContent(orderData) {
         const { tableNumber, items, timestamp, kotType } = orderData;
         const date = new Date(timestamp);
@@ -470,14 +353,42 @@ class BillingScreen {
         }
         
         try {
-            console.log('📋 Starting auto silent KOT printing...');
-            const kotResult = await this.autoSilentPrintKOTs();
-            console.log('📋 KOT printing result:', kotResult);
+            console.log('📋 Starting centralized printing...');
             
-            if (kotResult.success) {
-                console.log(`✅ KOT printing successful: ${kotResult.kotsPrinted}/${kotResult.kotsTotal} KOTs printed`);
+            // Use centralized printing manager from the app instance
+            if (window.app && window.app.printingManager) {
+                const orderData = {
+                    items: this.currentOrder.map(item => ({
+                        id: item.id,
+                        name: item.name,
+                        quantity: item.quantity,
+                        price: item.price
+                    })),
+                    menuItems: this.menuItems,
+                    location: { 
+                        type: 'table', 
+                        number: this.currentTable 
+                    },
+                    serviceCharge: 0,
+                    restaurant: {
+                        name: 'Udupi Hotel',
+                        contact: '123-456-7890',
+                        address: 'Restaurant Address',
+                        gstin: 'GSTIN123456',
+                        fssai: 'FSSAI123456'
+                    }
+                };
+                
+                const result = await window.app.printingManager.printKOTs(orderData);
+                console.log('📋 Centralized KOT printing result:', result);
+                
+                if (result.success) {
+                    console.log(`✅ Centralized KOT printing successful: ${result.summary.kotsPrinted}/${result.summary.kotsTotal} KOTs printed`);
+                } else {
+                    console.error('❌ Centralized KOT printing failed');
+                }
             } else {
-                console.error('❌ KOT printing failed');
+                console.error('❌ Centralized printing manager not available');
             }
         } catch (error) {
             console.error('❌ Error in printOrderAutoSilent:', error);

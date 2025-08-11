@@ -3,6 +3,14 @@ const { ipcRenderer } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
+// Import Enhanced Printing System
+const PrintingSystem = require('./src/utils/enhancedPrintingSystem');
+
+// Import Centralized Printing Manager
+const PrintingManager = require('./src/utils/printingManager');
+
+// Note: Update notification manager is loaded via script tag to avoid require issues
+
 // ===== FEATURE FLAGS =====
 const ENABLE_COUNTERS = false; // Set to true to re-enable counter functionality
 // 
@@ -89,7 +97,14 @@ class POSApp {
         // Initialize version display
         this.initializeVersionDisplay();
         
-        // Settings for restaurant info
+        // Initialize Enhanced Printing System
+        this.printingSystem = new PrintingSystem();
+        
+        // Initialize Centralized Printing Manager  
+        this.printingManager = new PrintingManager();
+        
+        // Initialize Update Notification Manager (loaded via script tag)
+        this.updateNotificationManager = null; // Will be initialized in init()        // Settings for restaurant info
         this.settings = {
             restaurant: {
                 name: "UDUPI KRISHNAM VEG",
@@ -118,6 +133,9 @@ class POSApp {
         
         // Apply feature flags
         this.applyFeatureFlags();
+        
+        // Initialize update notifications
+        this.initUpdateNotifications();
         
         // Load service selector by default
         this.showServiceSelector();
@@ -395,11 +413,11 @@ class POSApp {
                         break;
                     case 'F1':
                         e.preventDefault();
-                        this.printOrder();
+                        this.printOrderCentralized();
                         break;
                     case 'F2':
                         e.preventDefault();
-                        this.printOrder();
+                        this.printOrderCentralized();
                         break;
                     case 'F3':
                         e.preventDefault();
@@ -410,6 +428,21 @@ class POSApp {
                         e.preventDefault();
                         // Test print functionality
                         this.testPrint();
+                        break;
+                    case 'F9':
+                        e.preventDefault();
+                        // Test Enhanced Printing System
+                        this.testEnhancedPrint();
+                        break;
+                    case 'F10':
+                        e.preventDefault();
+                        // Test Centralized Printing System
+                        this.testCentralizedPrint();
+                        break;
+                    case 'F11':
+                        e.preventDefault();
+                        // Use Centralized Print (new system)
+                        this.printOrderCentralized();
                         break;
                     case '/':
                         // Quick search shortcut - only if not already in an input
@@ -2571,10 +2604,10 @@ class POSApp {
             printButton.textContent = '🖨 Auto-printing...';
             printButton.disabled = true;
 
-            console.log('Starting auto-silent print...');
+            console.log('Starting centralized print...');
 
-            // Use new auto-silent print for one-click printing
-            await this.printOrderAutoSilent();
+            // Use new centralized print for one-click printing
+            await this.printOrderCentralized();
             
             // Success feedback
             printButton.textContent = '✅ Printed!';
@@ -2734,137 +2767,6 @@ class POSApp {
         } catch (error) {
             console.error('🔧 DEBUG: Auto-silent test error:', error);
             return { success: false, error: error.message };
-        }
-    }
-
-    // Enhanced auto-silent print method with retry logic and better error handling
-    async printOrderAutoSilent() {
-        const maxRetries = 2;
-        let attempt = 0;
-        
-        while (attempt <= maxRetries) {
-            try {
-                attempt++;
-                console.log(`Print attempt ${attempt}/${maxRetries + 1}`);
-                
-                // Generate bill content with enhanced fonts
-                const billContent = this.generateBillContent();
-                
-                // Print dual KOTs using auto-silent method
-                console.log('Auto-printing KOTs...');
-                console.log('🚨 KOT DEBUG: Method called, about to check items');
-                console.log('🚨 CRITICAL: About to call autoSilentPrintKOTs method...');
-                console.log('🚨 CRITICAL: this.autoSilentPrintKOTs type:', typeof this.autoSilentPrintKOTs);
-                
-                try {
-                    const kotResult = await this.autoSilentPrintKOTs();
-                    console.log('KOT print result:', kotResult);
-                } catch (kotError) {
-                    console.error('🚨 CRITICAL: KOT method failed with error:', kotError);
-                    console.error('🚨 CRITICAL: KOT error stack:', kotError.stack);
-                }
-                
-                // Continue with bill printing regardless of KOT result (KOTs handle their own fallbacks)
-                // SPEED OPTIMIZATION: Reduced delay between prints for instant printing
-                await new Promise(resolve => setTimeout(resolve, 200));
-                
-                // Print Bill using silent print method (corrected IPC call)
-                console.log('Auto-printing Bill...');
-                console.log('📋 Calling silent-print-bill IPC handler...');
-                const billResult = await ipcRenderer.invoke('silent-print-bill', billContent);
-                console.log('📋 Bill print result:', billResult);
-                
-                // Check if bill print was successful
-                if (!billResult.success) {
-                    console.log('🖨️ Silent print failed - using preview mode for Bill');
-                    await this.printCustomerBill(); // Use preview mode
-                    console.log('✅ Bill printed successfully using preview mode');
-                    return; // Success via preview mode
-                }
-                
-                if (!billResult.success) {
-                    console.log('🖨️ Bill print failed:', billResult.error);
-                    throw new Error(`Bill print failed: ${billResult.error}`);
-                }
-                
-                console.log('✅ Bill printed successfully');
-                console.log('✅ Order printed successfully - both KOT and Bill');
-                return; // Success - exit retry loop
-                
-            } catch (error) {
-                console.error(`Print attempt ${attempt} failed:`, error.message);
-                
-                // If this was the last attempt, throw the error
-                if (attempt > maxRetries) {
-                    console.error('All print attempts failed:', error);
-                    throw error;
-                }
-                
-                // Wait before retrying (exponential backoff)
-                const retryDelay = Math.min(2000 * attempt, 5000); // Max 5 second delay
-                console.log(`Retrying in ${retryDelay}ms...`);
-                await new Promise(resolve => setTimeout(resolve, retryDelay));
-            }
-        }
-    }
-
-    // Enhanced silent print method with improved error handling
-    async printOrderEnhanced() {
-        try {
-            // Generate bill content
-            const billContent = this.generateBillContent();
-            
-            // Print dual KOTs using enhanced method
-            console.log('Printing dual KOTs...');
-            await this.enhancedSilentPrintKOTs();
-
-            // Small delay between prints to avoid printer conflicts
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Print Bill using silent print method (corrected IPC call)
-            console.log('Printing Bill...');
-            const billResult = await ipcRenderer.invoke('silent-print-bill', billContent);
-            if (!billResult.success) {
-                throw new Error(`Bill print failed: ${billResult.error}`);
-            }
-            console.log('Bill printed successfully');
-            
-        } catch (error) {
-            console.error('Enhanced printing error:', error);
-            throw error; // Re-throw to be handled by printOrder
-        }
-    }
-
-    async enhancedSilentPrintKOTs() {
-        // Split items by kotGroup
-        const kitchenItems = this.currentOrder.filter(item => {
-            const menuItem = this.menuItems.find(mi => mi.id === item.id);
-            return menuItem && menuItem.kotGroup === 'kitchen';
-        });
-        
-        const drinksItems = this.currentOrder.filter(item => {
-            const menuItem = this.menuItems.find(mi => mi.id === item.id);
-            return menuItem && menuItem.kotGroup === 'drinks';
-        });
-
-        // Print Kitchen KOT if items exist
-        if (kitchenItems.length > 0) {
-            const kitchenKotContent = this.generateKOTContent(kitchenItems, 'KITCHEN KOT');
-            const kotResult = await ipcRenderer.invoke('enhanced-silent-print', kitchenKotContent, 'Kitchen KOT');
-            if (!kotResult.success) {
-                throw new Error(`Kitchen KOT print failed: ${kotResult.error}`);
-            }
-            console.log('Kitchen KOT printed successfully to:', kotResult.printer);
-        }
-        
-        // Print Drinks KOT if items exist  
-        if (drinksItems.length > 0) {
-            const drinksKotContent = this.generateKOTContent(drinksItems, 'DRINKS KOT');
-            const kotResult = await ipcRenderer.invoke('enhanced-silent-print', drinksKotContent, 'Drinks KOT');
-            if (!kotResult.success) {
-                throw new Error(`Drinks KOT print failed: ${kotResult.error}`);
-            }
-            console.log('Drinks KOT printed successfully to:', kotResult.printer);
         }
     }
 
@@ -3083,28 +2985,6 @@ class POSApp {
         }, 500);
     }
 
-    // Silent print method (legacy - kept for compatibility)
-    async printOrderSilent() {
-        // Generate print content
-        const kotContent = this.generateKOTContent();
-        const billContent = this.generateBillContent();
-        
-        // Print KOT silently
-        const kotResult = await ipcRenderer.invoke('silent-print-kot', kotContent);
-        if (!kotResult.success) {
-            throw new Error(`KOT print failed: ${kotResult.error}`);
-        }
-
-        // Small delay between prints
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Print Bill silently  
-        const billResult = await ipcRenderer.invoke('silent-print-bill', billContent);
-        if (!billResult.success) {
-            throw new Error(`Bill print failed: ${billResult.error}`);
-        }
-    }
-
     // Fallback method with preview windows (existing functionality)
     async printOrderWithPreview() {
         try {
@@ -3144,147 +3024,6 @@ class POSApp {
         }
     }
 
-    async autoSilentPrintKOTs() {
-        // FORCE ENABLE CONSOLE LOGGING FOR KOT DEBUGGING
-        const enableDebugLogging = true;
-        if (enableDebugLogging) {
-            console.log('🔧 DEBUG MODE ENABLED - KOT printing diagnostics active');
-        console.log('🚨 CRITICAL DEBUG: autoSilentPrintKOTs method has been called!');
-        console.log('🚨 CRITICAL DEBUG: this.currentOrder length:', this.currentOrder.length);
-        console.log('🚨 CRITICAL DEBUG: this.menuItems length:', this.menuItems.length);
-        }
-        
-        console.log('🔄 Starting autoSilentPrintKOTs...');
-        console.log('📝 Current order items:', this.currentOrder.length);
-        
-        // Split items by kotGroup
-        const kitchenItems = this.currentOrder.filter(item => {
-            const menuItem = this.menuItems.find(mi => mi.id === item.id);
-            
-            // FALLBACK WARNING: Check for undefined kotGroup
-            if (!menuItem) {
-                console.warn(`⚠️ FALLBACK WARNING: Menu item not found for order item "${item.name}" (ID: ${item.id})`);
-                return true; // Default to kitchen if menu item not found
-            }
-            
-            if (!menuItem.kotGroup) {
-                console.warn(`⚠️ FALLBACK WARNING: Menu item "${item.name}" has undefined kotGroup - defaulting to kitchen`);
-                return true; // Default to kitchen if kotGroup is undefined
-            }
-            
-            const isKitchen = menuItem.kotGroup === 'kitchen';
-            console.log(`Item ${item.name} (ID: ${item.id}) - menuItem kotGroup: ${menuItem?.kotGroup} - order item kotGroup: ${item.kotGroup} - isKitchen: ${isKitchen}`);
-            return isKitchen;
-        });
-        
-        const drinksItems = this.currentOrder.filter(item => {
-            const menuItem = this.menuItems.find(mi => mi.id === item.id);
-            
-            // Skip fallback for drinks - only include items explicitly marked as drinks
-            if (!menuItem || !menuItem.kotGroup) {
-                return false;
-            }
-            
-            const isDrinks = menuItem.kotGroup === 'drinks';
-            console.log(`Item ${item.name} (ID: ${item.id}) - menuItem kotGroup: ${menuItem?.kotGroup} - order item kotGroup: ${item.kotGroup} - isDrinks: ${isDrinks}`);
-            return isDrinks;
-        });
-
-        console.log(`🍳 Kitchen items found: ${kitchenItems.length}`);
-        console.log(`☕ Drinks items found: ${drinksItems.length}`);
-
-        // CRITICAL FIX: FORCE KOT PRINTING - NO FAILURES ALLOWED
-        let kotsPrintedCount = 0;
-        let totalKotsNeeded = 0;
-        
-        // Print Kitchen KOT if items exist
-        if (kitchenItems.length > 0) {
-            totalKotsNeeded++;
-            console.log(`🍳 FORCING Kitchen KOT print for ${kitchenItems.length} items...`);
-            
-            try {
-                // Try thermal print first
-                const kitchenKotContent = this.generateKOTContent(kitchenItems, 'KITCHEN KOT');
-                console.log('� Attempting thermal print for Kitchen KOT...');
-                const kotResult = await ipcRenderer.invoke('silent-print-kot', kitchenKotContent);
-                console.log('🚨 CRITICAL: Kitchen KOT IPC call completed, result:', JSON.stringify(kotResult));
-                
-                if (kotResult.success) {
-                    console.log('✅ Kitchen KOT printed successfully via thermal printer:', kotResult.printer);
-                    kotsPrintedCount++;
-                } else {
-                    throw new Error('Thermal print failed, forcing preview');
-                }
-            } catch (error) {
-                // FORCE PREVIEW MODE - NO FAILURES ALLOWED
-                console.log('⚠️ Kitchen KOT thermal failed, FORCING preview mode...');
-                try {
-                    await this.printSingleKOT(kitchenItems, 'KITCHEN KOT');
-                    console.log('✅ Kitchen KOT printed successfully via FORCED preview mode');
-                    kotsPrintedCount++;
-                } catch (previewError) {
-                    console.error('❌ CRITICAL: Kitchen KOT preview mode failed:', previewError);
-                    // LAST RESORT: Create manual preview window
-                    this.forceKOTPreview(kitchenItems, 'KITCHEN KOT');
-                    kotsPrintedCount++;
-                }
-            }
-        }
-        
-        // Print Drinks KOT if items exist
-        if (drinksItems.length > 0) {
-            totalKotsNeeded++;
-            console.log(`☕ FORCING Drinks KOT print for ${drinksItems.length} items...`);
-            
-            try {
-                // Try thermal print first
-                const drinksKotContent = this.generateKOTContent(drinksItems, 'DRINKS KOT');
-                console.log('� Attempting thermal print for Drinks KOT...');
-                const kotResult = await ipcRenderer.invoke('silent-print-kot', drinksKotContent);
-                console.log('🚨 CRITICAL: Drinks KOT IPC call completed, result:', JSON.stringify(kotResult));
-                
-                if (kotResult.success) {
-                    console.log('✅ Drinks KOT printed successfully via thermal printer:', kotResult.printer);
-                    kotsPrintedCount++;
-                } else {
-                    throw new Error('Thermal print failed, forcing preview');
-                }
-            } catch (error) {
-                // FORCE PREVIEW MODE - NO FAILURES ALLOWED
-                console.log('⚠️ Drinks KOT thermal failed, FORCING preview mode...');
-                try {
-                    await this.printSingleKOT(drinksItems, 'DRINKS KOT');
-                    console.log('✅ Drinks KOT printed successfully via FORCED preview mode');
-                    kotsPrintedCount++;
-                } catch (previewError) {
-                    console.error('❌ CRITICAL: Drinks KOT preview mode failed:', previewError);
-                    // LAST RESORT: Create manual preview window
-                    this.forceKOTPreview(drinksItems, 'DRINKS KOT');
-                    kotsPrintedCount++;
-                }
-            }
-        }
-
-        console.log(`📊 KOT FORCE PRINT SUMMARY: ${kotsPrintedCount}/${totalKotsNeeded} KOTs printed`);
-        
-        // If no items to print, that's success
-        if (totalKotsNeeded === 0) {
-            console.log('ℹ️ No KOTs needed - order has no kitchen or drinks items');
-            return { success: true, kotsPrinted: 0, kotsTotal: 0 };
-        }
-        
-        // SUCCESS: At least one KOT was printed
-        const success = kotsPrintedCount > 0;
-        console.log(success ? '✅ KOT FORCE PRINT SUCCESSFUL' : '❌ KOT FORCE PRINT FAILED');
-        
-        return { 
-            success: success,
-            kotsPrinted: kotsPrintedCount,
-            kotsTotal: totalKotsNeeded,
-            fallbackToPreview: false // We handle our own fallbacks
-        };
-    }
-    
     // EMERGENCY FALLBACK: Force KOT preview when all else fails
     forceKOTPreview(items, kotTitle) {
         console.log(`� EMERGENCY: Creating force preview for ${kotTitle}`);
@@ -3315,83 +3054,138 @@ class POSApp {
 
     }
 
-    async printKOT() {
-        // Split items by kotGroup
-        const kitchenItems = this.currentOrder.filter(item => {
-            const menuItem = this.menuItems.find(mi => mi.id === item.id);
-            return menuItem && menuItem.kotGroup === 'kitchen';
-        });
-        
-        const drinksItems = this.currentOrder.filter(item => {
-            const menuItem = this.menuItems.find(mi => mi.id === item.id);
-            return menuItem && menuItem.kotGroup === 'drinks';
-        });
+    // NEW: Centralized Printing Method (uses new PrintingManager)
+    async printOrderCentralized() {
+        try {
+            if (!this.currentOrder || this.currentOrder.length === 0) {
+                alert('No items in order to print');
+                return { success: false, error: 'No items to print' };
+            }
 
-        // Print KOTs based on what items are present
-        const printPromises = [];
-        
-        if (kitchenItems.length > 0) {
-            printPromises.push(this.printSingleKOT(kitchenItems, 'KITCHEN KOT'));
-        }
-        
-        if (drinksItems.length > 0) {
-            printPromises.push(this.printSingleKOT(drinksItems, 'DRINKS KOT'));
-        }
-        
-        // Print both KOTs simultaneously for speed
-        await Promise.all(printPromises);
-    }
+            console.log('🎯 Starting CENTRALIZED print process...');
 
-    async printSingleKOT(items, kotTitle) {
-        // Generate KOT HTML content for specific items group
-        const kotContent = this.generateKOTContent(items, kotTitle);
-        
-        // Create a new window for printing KOT
-        const kotWindow = window.open('', '_blank', 'width=300,height=600');
-        kotWindow.document.write(kotContent);
-        kotWindow.document.close();
-        
-        // Wait for content to load then print - FIXED: Don't close window immediately
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                kotWindow.print();
-                
-                // CRITICAL FIX: Listen for afterprint event before closing window
-                kotWindow.addEventListener('afterprint', () => {
-                    kotWindow.close();
-                    resolve();
-                });
-                
-                // Fallback: Close after 3 seconds if afterprint doesn't fire
+            // Show user-friendly printing feedback
+            const printButton = document.getElementById('print-order');
+            if (printButton) {
+                const originalText = printButton.textContent;
+                printButton.textContent = '🖨 Centralized Printing...';
+                printButton.disabled = true;
+
+                // Reset button after processing
                 setTimeout(() => {
-                    if (!kotWindow.closed) {
-                        kotWindow.close();
-                    }
-                    resolve();
+                    printButton.textContent = originalText;
+                    printButton.disabled = false;
                 }, 3000);
-            }, 1000); // Increased delay for proper content loading
-        });
+            }
+
+            // Prepare order data for centralized printing manager
+            const orderData = {
+                items: this.currentOrder.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price
+                })),
+                menuItems: this.menuItems,
+                location: { 
+                    type: this.billingMode, 
+                    number: this.currentLocation 
+                },
+                serviceCharge: this.serviceFeePercentage || 0,
+                restaurant: {
+                    name: this.settings.restaurant.name,
+                    contact: this.settings.restaurant.contact,
+                    address: this.settings.restaurant.address,
+                    gstin: this.settings.restaurant.gstin,
+                    fssai: this.settings.restaurant.fssai
+                }
+            };
+
+            // Use Centralized Printing Manager
+            const result = await this.printingManager.printCompleteOrder(orderData);
+            
+            if (result.success) {
+                console.log('🎯 ✅ Centralized print completed successfully');
+                console.log(`📊 Summary: ${result.summary.kotsPrinted}/${result.summary.kotsTotal} KOTs printed, Bill: ${result.summary.billMethod}`);
+                
+                // Success feedback
+                if (printButton) {
+                    printButton.textContent = '✅ Centralized Print Success!';
+                }
+                
+                // Clear order after successful print (same as current)
+                this.currentOrder = [];
+                this.serviceFeePercentage = 0;
+                
+                // Update UI to reflect cleared service fee
+                const serviceFeeDropdown = document.getElementById('service-fee-dropdown');
+                if (serviceFeeDropdown) {
+                    serviceFeeDropdown.value = '0';
+                }
+                
+                // Clear active table/counter data (same as current)
+                if (this.billingMode === 'table') {
+                    this.activeTables.delete(this.currentTable);
+                    this.saveActiveTableData();
+                } else {
+                    this.activeCounters.delete(this.currentCounter);
+                    this.saveActiveCounterData();
+                }
+                
+                this.saveCurrentOrder();
+                this.renderOrder();
+                this.updateTotals();
+                
+                return result;
+            } else {
+                throw new Error(result.error || 'Centralized print failed');
+            }
+
+        } catch (error) {
+            console.error('🎯 ❌ Centralized Print Error:', error);
+            
+            // Reset button state on error
+            const printButton = document.getElementById('print-order');
+            if (printButton) {
+                printButton.textContent = '🖨 Print';
+                printButton.disabled = false;
+            }
+            
+            alert(`Centralized print failed: ${error.message}`);
+            return { success: false, error: error.message };
+        }
     }
 
-    async printCustomerBill() {
-        // Generate Customer Bill HTML content (full bill with prices)
-        const billContent = this.generateBillContent();
-        
-        // Create a new window for printing Customer Bill
-        const billWindow = window.open('', '_blank', 'width=300,height=600');
-        billWindow.document.write(billContent);
-        billWindow.document.close();
-        
-        // Wait for content to load then print
-        setTimeout(() => {
-            billWindow.print();
-            billWindow.close();
-        }, 1000); // Slight delay after KOT
+    // Test Centralized Printing System
+    async testCentralizedPrint() {
+        console.log('🧪 Testing Centralized Printing System from POS App...');
+        try {
+            const result = await this.printingManager.testPrintSystem();
+            console.log('🧪 Centralized Print Test Results:', result);
+            alert('Centralized Print Test completed! Check console for results.');
+        } catch (error) {
+            console.error('🧪 Centralized Print Test Error:', error);
+            alert(`Centralized Print Test failed: ${error.message}`);
+        }
     }
 
-    generateKOTContent(items = this.currentOrder, kotTitle = 'KITCHEN ORDER TICKET') {
-        const now = new Date();
-        const locationText = this.billingMode === 'table' ? `Table ${this.currentLocation}` : `Counter ${this.currentLocation}`;
+    generateKOTContent(orderDataOrItems = this.currentOrder, kotTitle = 'KITCHEN ORDER TICKET') {
+        // Handle both formats: structured orderData object or simple items array
+        let items, tableNumber, timestamp, kotType;
+        
+        if (orderDataOrItems && typeof orderDataOrItems === 'object' && orderDataOrItems.items) {
+            // Structured orderData format (from BillingScreen)
+            ({ tableNumber, items, timestamp, kotType } = orderDataOrItems);
+            kotTitle = kotType ? `${kotType.toUpperCase()} ORDER` : kotTitle;
+        } else {
+            // Simple items array format (legacy)
+            items = Array.isArray(orderDataOrItems) ? orderDataOrItems : this.currentOrder;
+            tableNumber = this.currentLocation;
+            timestamp = new Date().toISOString();
+        }
+        
+        const now = timestamp ? new Date(timestamp) : new Date();
+        const locationText = this.billingMode === 'table' ? `Table ${tableNumber || this.currentLocation}` : `Counter ${tableNumber || this.currentLocation}`;
         
         // Check if this order contains any parcel items
         const hasParcelItems = items.some(item => (item.parcelCharge || 0) > 0);
@@ -3596,10 +3390,10 @@ class POSApp {
                         }
                         body { 
                             margin: 0 !important; 
-                            padding: 2mm !important; 
+                            padding: 3mm !important; /* ENHANCED: Increased padding for better spacing */
                         }
                         body, table { 
-                            font-size: 11px; /* ENHANCED: +1px for better visibility */
+                            font-size: 14px; /* ENHANCED: Increased from 11px for better visibility */
                         }
                         * { 
                             -webkit-print-color-adjust: exact !important; 
@@ -3612,20 +3406,20 @@ class POSApp {
                         }
                         /* HIGH-DPI OPTIMIZATION: Enhanced for 200+ DPI thermal printers */
                         @media print and (min-resolution: 200dpi) {
-                            body, table { font-size: 12px; }
-                            .restaurant-name { font-size: 16px; }
-                            .bill-title { font-size: 14px; }
-                            .grand-total { font-size: 14px; }
+                            body, table { font-size: 16px; } /* ENHANCED: Increased from 12px */
+                            .restaurant-name { font-size: 20px; } /* ENHANCED: Increased from 16px */
+                            .bill-title { font-size: 18px; } /* ENHANCED: Increased from 14px */
+                            .grand-total { font-size: 18px; } /* ENHANCED: Increased from 14px */
                         }
                     }
                     body { 
                         font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern clean font with fallbacks */
-                        font-size: 11px; /* ENHANCED: +1px base size for better readability */
+                        font-size: 14px; /* ENHANCED: Increased from 11px base size for better readability */
                         font-weight: bold !important; /* THERMAL: Bold for solid thermal dots */
                         margin: 0; 
                         padding: 2mm;
-                        width: 270px;
-                        max-width: 270px;
+                        width: 300px; /* ENHANCED: Increased from 270px for better thermal printer compatibility */
+                        max-width: 300px; /* ENHANCED: Increased from 270px */
                         background: white !important;
                         color: #000000 !important; /* THERMAL: Solid black only */
                         line-height: 1.3; /* ENHANCED: Improved readability spacing */
@@ -3649,7 +3443,7 @@ class POSApp {
                     }
                     .restaurant-name { 
                         font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
-                        font-size: 15px; /* ENHANCED: +1px for better restaurant name visibility */
+                        font-size: 18px; /* ENHANCED: Increased from 15px for better restaurant name visibility */
                         margin-bottom: 3px; 
                         color: #000000 !important; /* THERMAL: Solid black */
                         letter-spacing: 0.3px; /* THERMAL: Reduced spacing for clarity */
@@ -3658,7 +3452,7 @@ class POSApp {
                         line-height: 1.3; /* ENHANCED: Improved readability spacing */
                     }
                     .restaurant-details { 
-                        font-size: 11px; /* ENHANCED: +1px for better address/contact readability */
+                        font-size: 13px; /* ENHANCED: Increased from 11px for better address/contact readability */
                         margin: 1px 0; 
                         font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
                         color: #000000 !important; /* THERMAL: Solid black */
@@ -3669,7 +3463,7 @@ class POSApp {
                     }
                     .bill-title { 
                         font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
-                        font-size: 13px; /* ENHANCED: +1px for better bill title visibility */
+                        font-size: 16px; /* ENHANCED: Increased from 13px for better bill title visibility */
                         margin: 4px 0; 
                         color: #000000 !important; /* THERMAL: Solid black */
                         border: 2px solid #000000 !important; /* THERMAL: Thicker solid black border */
@@ -3690,7 +3484,7 @@ class POSApp {
                         letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
                     }
                     .datetime { 
-                        font-size: 11px; /* ENHANCED: +1px for better readability */
+                        font-size: 13px; /* ENHANCED: Increased from 11px for better readability */
                         margin: 2px 0; 
                         font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
                         color: #000000 !important; /* THERMAL: Solid black */
@@ -3710,7 +3504,7 @@ class POSApp {
                         border-bottom: 2px solid #000000 !important; /* THERMAL: Solid black border */
                         padding: 2px 0;
                         font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
-                        font-size: 11px; /* ENHANCED: +1px for better header readability */
+                        font-size: 13px; /* ENHANCED: Increased from 11px for better header readability */
                         color: #000000 !important; /* THERMAL: Solid black */
                         margin-bottom: 2px;
                         box-sizing: border-box;
@@ -3723,11 +3517,11 @@ class POSApp {
                         justify-content: space-between; 
                         align-items: flex-start;
                         margin: 1px 0;
-                        font-size: 11px; /* ENHANCED: +1px for better item row readability */
+                        font-size: 13px; /* ENHANCED: Increased from 11px for better item row readability */
                         padding: 1px 0;
                         border-bottom: 1px solid #000000 !important; /* THERMAL: Solid black instead of dotted */
                         font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
-                        min-height: 13px; /* ENHANCED: Adjusted for increased font size */
+                        min-height: 15px; /* ENHANCED: Adjusted for increased font size */
                         box-sizing: border-box;
                         font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
                         line-height: 1.3; /* ENHANCED: Improved readability spacing */
@@ -3781,7 +3575,7 @@ class POSApp {
                         letter-spacing: 0.02em !important; /* ENHANCED: Subtle spacing for clarity */
                     }
                     .parcel-charge-row {
-                        font-size: 10px; /* ENHANCED: +1px for better parcel charge readability */
+                        font-size: 12px; /* ENHANCED: Increased from 10px for better parcel charge readability */
                         color: #333333 !important; /* THERMAL: Slightly lighter for sub-items */
                         border-bottom: none !important; /* THERMAL: No border for sub-items */
                         font-family: 'Roboto Mono', 'Courier New', 'Liberation Mono', 'Consolas', monospace !important; /* ENHANCED: Modern font consistency */
@@ -3831,7 +3625,7 @@ class POSApp {
                         margin-top: 8px; 
                         padding-top: 4px; 
                         text-align: center; 
-                        font-size: 9px; /* ENHANCED: +1px for better footer readability */
+                        font-size: 11px; /* ENHANCED: Increased from 9px for better footer readability */
                         font-weight: bold !important; /* THERMAL: Bold for thermal clarity */
                         line-height: 1.3; /* ENHANCED: Improved readability spacing, increased from 1.1 */
                         box-sizing: border-box;
@@ -4259,5 +4053,109 @@ class POSApp {
         
         // Auto-close after 3 seconds
         setTimeout(closeModal, 3000);
+    }
+
+    // Test Enhanced Printing System
+    async testEnhancedPrint() {
+        console.log('🧪 Testing Enhanced Printing System from POS App...');
+        try {
+            const result = await this.printingSystem.testPrint();
+            console.log('🧪 Enhanced Print Test Results:', result);
+            alert('Enhanced Print Test completed! Check console for results.');
+        } catch (error) {
+            console.error('🧪 Enhanced Print Test Error:', error);
+            alert(`Enhanced Print Test failed: ${error.message}`);
+        }
+    }
+
+    // ===================================
+    // UPDATE NOTIFICATION METHODS
+    // ===================================
+
+    /**
+     * Initialize update notification system
+     */
+    initUpdateNotifications() {
+        console.log('🔄 Initializing update notification system...');
+        
+        // Initialize the update notification manager
+        if (window.UpdateNotificationManager) {
+            this.updateNotificationManager = new window.UpdateNotificationManager();
+        } else {
+            console.warn('UpdateNotificationManager not available - update notifications disabled');
+            return;
+        }
+        
+        // Set up update button click handler
+        const updateBtn = document.getElementById('update-btn');
+        if (updateBtn) {
+            // Remove existing click handlers and add our new handler
+            updateBtn.removeEventListener('click', this.handleUpdateBtnClick);
+            updateBtn.addEventListener('click', this.handleUpdateBtnClick.bind(this));
+        }
+        
+        // Start periodic update checks
+        this.updateNotificationManager.startPeriodicChecks();
+        
+        console.log('✅ Update notification system initialized');
+    }
+
+    /**
+     * Handle update button click - now shows lightweight notification or manual check
+     */
+    async handleUpdateBtnClick() {
+        const updateBtn = document.getElementById('update-btn');
+        if (!updateBtn || !this.updateNotificationManager) return;
+
+        // Provide visual feedback
+        const originalText = updateBtn.textContent;
+        updateBtn.textContent = '🔄';
+        updateBtn.disabled = true;
+
+        try {
+            // Perform manual update check
+            const result = await this.updateNotificationManager.manualCheck();
+            
+            // Add visual indicator if update is available
+            if (result.updateAvailable) {
+                updateBtn.classList.add('update-available');
+                updateBtn.title = `Update available: v${result.latestVersion}`;
+            } else {
+                updateBtn.classList.remove('update-available');
+                updateBtn.title = 'Check for Updates';
+            }
+
+        } catch (error) {
+            console.error('Manual update check failed:', error);
+            this.updateNotificationManager.showInfoToast('❌ Check Failed', 'Could not check for updates. Please check your internet connection.');
+        } finally {
+            // Reset button state
+            setTimeout(() => {
+                updateBtn.textContent = originalText;
+                updateBtn.disabled = false;
+            }, 1000);
+        }
+    }
+
+    /**
+     * Show update available indicator on update button
+     */
+    showUpdateAvailableIndicator(version) {
+        const updateBtn = document.getElementById('update-btn');
+        if (updateBtn) {
+            updateBtn.classList.add('update-available');
+            updateBtn.title = `Update available: v${version} - Click to learn more`;
+        }
+    }
+
+    /**
+     * Hide update available indicator
+     */
+    hideUpdateAvailableIndicator() {
+        const updateBtn = document.getElementById('update-btn');
+        if (updateBtn) {
+            updateBtn.classList.remove('update-available');
+            updateBtn.title = 'Check for Updates';
+        }
     }
 }

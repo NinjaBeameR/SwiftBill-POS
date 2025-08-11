@@ -573,9 +573,13 @@ ipcMain.handle('save-orders', async (event, ordersData) => {
 
 // IPC handlers for silent printing functionality
 ipcMain.handle('silent-print-kot', async (event, kotContent) => {
+  let printWindow = null;
+  
   try {
+    console.log('🖨️ Starting KOT print process...');
+    
     // Create a hidden window for printing KOT
-    const printWindow = new BrowserWindow({
+    printWindow = new BrowserWindow({
       width: 300,
       height: 600,
       show: false,
@@ -586,44 +590,107 @@ ipcMain.handle('silent-print-kot', async (event, kotContent) => {
       }
     });
 
-    // Load the KOT content
-    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(kotContent)}`);
+    // Use a more reliable method to load content
+    console.log('📄 Loading KOT content directly...');
     
     // Wait for content to load then print silently
-    await new Promise((resolve, reject) => {
+    const printResult = await new Promise((resolve, reject) => {
+      let resolved = false;
+      
+      // Set a shorter timeout for faster fallback
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          console.log('⏰ KOT print timeout after 8 seconds');
+          if (printWindow && !printWindow.isDestroyed()) {
+            printWindow.close();
+          }
+          resolve({ success: false, error: 'Print timeout after 8 seconds' });
+        }
+      }, 8000);
+      
+      // Load content and setup print immediately
       printWindow.webContents.once('did-finish-load', () => {
-        printWindow.webContents.print({
-          silent: true,
-          printBackground: true,
-          margins: {
-            marginType: 'none'
-          },
-          pageSize: {
-            width: 80000, // 80mm in micrometers
-            height: 200000 // Auto height
+        console.log('📄 KOT content loaded, starting print immediately...');
+        
+        try {
+          printWindow.webContents.print({
+            silent: true,
+            printBackground: true,
+            margins: {
+              marginType: 'none'
+            },
+            pageSize: {
+              width: 80000, // 80mm in micrometers
+              height: 200000 // Auto height
+            }
+          }, (success, failureReason) => {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timeout);
+              
+              if (printWindow && !printWindow.isDestroyed()) {
+                printWindow.close();
+              }
+              
+              if (success) {
+                console.log('✅ KOT print completed successfully');
+                resolve({ success: true });
+              } else {
+                console.log('❌ KOT print failed:', failureReason);
+                resolve({ success: false, error: failureReason || 'Print failed' });
+              }
+            }
+          });
+        } catch (printError) {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+            console.log('❌ KOT print exception:', printError.message);
+            resolve({ success: false, error: printError.message });
           }
-        }, (success, failureReason) => {
-          printWindow.close();
-          if (success) {
-            resolve({ success: true });
-          } else {
-            reject(new Error(failureReason || 'Print failed'));
-          }
-        });
+        }
+      });
+      
+      // Handle load errors
+      printWindow.webContents.once('did-fail-load', (event, errorCode, errorDescription) => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          console.log('❌ KOT content load failed:', errorDescription);
+          resolve({ success: false, error: `Content load failed: ${errorDescription}` });
+        }
+      });
+      
+      // Load the content using the more reliable method
+      printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(kotContent)}`).catch(loadError => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          console.log('❌ KOT loadURL failed:', loadError.message);
+          resolve({ success: false, error: `LoadURL failed: ${loadError.message}` });
+        }
       });
     });
 
-    return { success: true };
+    return printResult;
   } catch (error) {
-    console.error('Silent KOT print error:', error);
+    console.error('❌ Silent KOT print error:', error);
+    if (printWindow && !printWindow.isDestroyed()) {
+      printWindow.close();
+    }
     return { success: false, error: error.message };
   }
 });
 
 ipcMain.handle('silent-print-bill', async (event, billContent) => {
+  let printWindow = null;
+  
   try {
+    console.log('🧾 Starting Bill print process...');
+    
     // Create a hidden window for printing Bill
-    const printWindow = new BrowserWindow({
+    printWindow = new BrowserWindow({
       width: 300,
       height: 800,
       show: false,
@@ -634,36 +701,95 @@ ipcMain.handle('silent-print-bill', async (event, billContent) => {
       }
     });
 
-    // Load the bill content
-    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(billContent)}`);
+    // Use a more reliable method to load content
+    console.log('📄 Loading Bill content directly...');
     
     // Wait for content to load then print silently
-    await new Promise((resolve, reject) => {
+    const printResult = await new Promise((resolve, reject) => {
+      let resolved = false;
+      
+      // Set a shorter timeout for faster fallback
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          console.log('⏰ Bill print timeout after 8 seconds');
+          if (printWindow && !printWindow.isDestroyed()) {
+            printWindow.close();
+          }
+          resolve({ success: false, error: 'Print timeout after 8 seconds' });
+        }
+      }, 8000);
+      
+      // Load content and setup print immediately
       printWindow.webContents.once('did-finish-load', () => {
-        printWindow.webContents.print({
-          silent: true,
-          printBackground: true,
-          margins: {
-            marginType: 'none'
-          },
-          pageSize: {
-            width: 80000, // 80mm in micrometers
-            height: 200000 // Auto height
+        console.log('📄 Bill content loaded, starting print immediately...');
+        
+        try {
+          printWindow.webContents.print({
+            silent: true,
+            printBackground: true,
+            margins: {
+              marginType: 'none'
+            },
+            pageSize: {
+              width: 80000, // 80mm in micrometers
+              height: 200000 // Auto height
+            }
+          }, (success, failureReason) => {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timeout);
+              
+              if (printWindow && !printWindow.isDestroyed()) {
+                printWindow.close();
+              }
+              
+              if (success) {
+                console.log('✅ Bill print completed successfully');
+                resolve({ success: true });
+              } else {
+                console.log('❌ Bill print failed:', failureReason);
+                resolve({ success: false, error: failureReason || 'Print failed' });
+              }
+            }
+          });
+        } catch (printError) {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+            console.log('❌ Bill print exception:', printError.message);
+            resolve({ success: false, error: printError.message });
           }
-        }, (success, failureReason) => {
-          printWindow.close();
-          if (success) {
-            resolve({ success: true });
-          } else {
-            reject(new Error(failureReason || 'Print failed'));
-          }
-        });
+        }
+      });
+      
+      // Handle load errors
+      printWindow.webContents.once('did-fail-load', (event, errorCode, errorDescription) => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          console.log('❌ Bill content load failed:', errorDescription);
+          resolve({ success: false, error: `Content load failed: ${errorDescription}` });
+        }
+      });
+      
+      // Load the content using the more reliable method
+      printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(billContent)}`).catch(loadError => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          console.log('❌ Bill loadURL failed:', loadError.message);
+          resolve({ success: false, error: `LoadURL failed: ${loadError.message}` });
+        }
       });
     });
 
-    return { success: true };
+    return printResult;
   } catch (error) {
-    console.error('Silent bill print error:', error);
+    console.error('❌ Silent bill print error:', error);
+    if (printWindow && !printWindow.isDestroyed()) {
+      printWindow.close();
+    }
     return { success: false, error: error.message };
   }
 });

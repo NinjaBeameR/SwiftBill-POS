@@ -111,6 +111,10 @@ const helpers = {
             'F1': 'Print KOT',
             'F2': 'Print Bill',
             'F3': 'Clear Order',
+            'F4': 'Test Print (Legacy)',
+            'F9': 'Test Enhanced Print',
+            'F10': 'Test Centralized Print',
+            'F11': 'Use Centralized Print (NEW)',
             'Ctrl+S': 'Save Order'
         };
     }
