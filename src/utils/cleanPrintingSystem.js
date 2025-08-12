@@ -455,7 +455,7 @@ class CleanPrintingSystem {
 
     <div class="footer">
         <div>*** Thank you, Visit again ***</div>
-        <div>Powered by SwiftBill POS</div>
+        <div>Powered by NMD</div>
     </div>
 </body>
 </html>`;
