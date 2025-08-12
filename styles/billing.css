@@ -40,9 +40,9 @@
     height: calc(100vh - 200px);
 }
 
-/* Menu Section */
+/* Menu Section - Reduced width for better search-focused workflow */
 .menu-section {
-    flex: 2;
+    flex: 1.2;  /* Reduced from flex: 2 for narrower menu pane */
     background: white;
     border-radius: 12px;
     padding: 20px;
@@ -266,15 +266,16 @@
     letter-spacing: 0.5px;
 }
 
-/* Order Section */
+/* Order Section - Increased width for better large order visibility */
 .order-section {
-    flex: 1;
+    flex: 1.8;  /* Increased from flex: 1 for wider billing pane */
     background: white;
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
+    border-left: 1px solid #e2e8f0; /* Subtle divider */
 }
 
 .order-section h3 {
@@ -300,12 +301,19 @@
 .order-item {
     display: flex;
     flex-direction: column;
-    padding: 12px;
-    margin-bottom: 10px;
+    padding: 15px;  /* Increased padding for better spacing */
+    margin-bottom: 12px;  /* Increased margin for clean separation */
     background: #f8f9fa;
-    border-radius: 8px;
+    border-radius: 10px;  /* Slightly more rounded for modern look */
     border-left: 4px solid #667eea;
     transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);  /* Subtle shadow for depth */
+}
+
+.order-item:hover {
+    background: #f0f4f8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
 .order-item.parcel-item {
@@ -317,7 +325,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
+    gap: 12px;  /* Consistent gap between elements */
 }
 
 .order-item-parcel {
@@ -450,47 +458,162 @@
 
 .order-item-name {
     flex: 1;
-    font-weight: 500;
+    font-weight: 600;  /* Slightly bolder for better readability */
     color: #2d3748;
+    font-size: 0.95rem;  /* Slightly larger font */
 }
 
 .order-item-controls {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin: 0 15px;
+    gap: 8px;  /* Reduced gap for tighter controls */
 }
 
+/* FIXED: Ensure quantity buttons maintain proper styling */
 .qty-btn {
-    width: 30px;
-    height: 30px;
+    width: 32px;  /* Slightly larger for better touch target */
+    height: 32px;
     border: none;
     border-radius: 50%;
-    background: #667eea;
-    color: white;
+    background: #667eea !important;  /* Force background color */
+    color: white !important;  /* Force text color */
     cursor: pointer;
     font-weight: bold;
+    font-size: 1.1rem;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
 }
 
 .qty-btn:hover {
-    background: #5a6fd8;
+    background: #5a6fd8 !important;  /* Force hover background */
     transform: scale(1.1);
+    box-shadow: 0 3px 6px rgba(102, 126, 234, 0.4);
+}
+
+.qty-btn:active {
+    transform: scale(0.95);
 }
 
 .qty-btn.minus {
-    background: #dc3545;
+    background: #dc3545 !important;  /* Force minus button color */
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
 }
 
 .qty-btn.minus:hover {
-    background: #c82333;
+    background: #c82333 !important;  /* Force minus hover color */
+    box-shadow: 0 3px 6px rgba(220, 53, 69, 0.4);
 }
 
 .quantity {
-    font-weight: 600;
+    font-weight: 700;  /* Bolder quantity display */
     color: #2d3748;
-    min-width: 20px;
+    min-width: 24px;
     text-align: center;
+    font-size: 1rem;
+}
+
+/* NEW: Parcel cycling control */
+.parcel-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 60px;
+}
+
+.parcel-cycle-btn {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.parcel-cycle-btn:hover {
+    border-color: #28a745;
+    background: #f0fff4;
+    transform: scale(1.05);
+}
+
+.parcel-cycle-btn[data-parcel-charge="5"] {
+    border-color: #28a745;
+    background: #f0fff4;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+}
+
+.parcel-cycle-btn[data-parcel-charge="10"] {
+    border-color: #007bff;
+    background: #e3f2fd;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.parcel-indicator {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #28a745;
+    min-width: 20px;
+}
+
+/* NEW: Parcel context menu */
+.parcel-context-menu {
+    position: absolute;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 1000;
+    overflow: hidden;
+    min-width: 120px;
+    animation: contextMenuAppear 0.2s ease-out;
+}
+
+@keyframes contextMenuAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.parcel-menu-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    color: #2d3748;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.parcel-menu-item:last-child {
+    border-bottom: none;
+}
+
+.parcel-menu-item:hover {
+    background: #f0f9ff;
+    color: #0ea5e9;
+    padding-left: 18px;
+}
+
+.parcel-menu-item[data-charge="0"] {
+    color: #dc3545;
+}
+
+.parcel-menu-item[data-charge="0"]:hover {
+    background: #ffeaea;
+    color: #c82333;
 }
 
 .order-item-price {
