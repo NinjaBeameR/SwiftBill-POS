@@ -12,7 +12,8 @@ class UpdateNotificationManager {
         this.githubRepo = 'NinjaBeameR/SwiftBill-POS';
         this.toastContainer = null;
         
-        this.initializeToastContainer();
+        // DISABLED: Toast container initialization (can be re-enabled later)
+        // this.initializeToastContainer();
     }
 
     /**
@@ -259,7 +260,8 @@ class UpdateNotificationManager {
 
             if (updateAvailable) {
                 console.log('UpdateManager: Update available!');
-                this.showUpdateToast(latestVersionInfo);
+                // REMOVED: Toast notification for update available (can be re-enabled later)
+                // this.showUpdateToast(latestVersionInfo);
                 return { 
                     checked: true, 
                     updateAvailable: true, 
@@ -287,16 +289,19 @@ class UpdateNotificationManager {
      * Manual update check triggered by user
      */
     async manualCheck() {
-        this.showInfoToast('🔄 Checking for Updates', 'Checking for the latest version...');
+        // REMOVED: Toast notification for "Checking for updates" (can be re-enabled later)
+        // this.showInfoToast('🔄 Checking for Updates', 'Checking for the latest version...');
         
         const result = await this.checkForUpdates(true);
         
         if (result.error) {
-            this.showInfoToast('❌ Check Failed', 'Could not check for updates. Please check your internet connection.');
+            // REMOVED: Toast notification for error (can be re-enabled later)
+            // this.showInfoToast('❌ Check Failed', 'Could not check for updates. Please check your internet connection.');
         } else if (!result.updateAvailable) {
-            this.showInfoToast('✅ Up to Date', `You're running the latest version (${result.currentVersion})`);
+            // REMOVED: Toast notification for "up to date" (can be re-enabled later)
+            // this.showInfoToast('✅ Up to Date', `You're running the latest version (${result.currentVersion})`);
         }
-        // If update is available, showUpdateToast was already called
+        // If update is available, showUpdateToast was already called in checkForUpdates
         
         return result;
     }
@@ -305,15 +310,18 @@ class UpdateNotificationManager {
      * Initialize automatic update checking
      */
     startPeriodicChecks() {
+        // DISABLED: Automatic notifications to remove all toast messages
+        // Periodic checks still run but don't show notifications (can be re-enabled later)
+        
         // Initial check after app startup (delayed to not interfere with startup)
-        setTimeout(() => {
-            this.checkForUpdates();
-        }, 30000); // 30 seconds after startup
+        // setTimeout(() => {
+        //     this.checkForUpdates();
+        // }, 30000); // 30 seconds after startup
 
         // Set up periodic checking every 4 hours while app is running
-        setInterval(() => {
-            this.checkForUpdates();
-        }, 4 * 60 * 60 * 1000);
+        // setInterval(() => {
+        //     this.checkForUpdates();
+        // }, 4 * 60 * 60 * 1000);
     }
 }
 

@@ -40,9 +40,9 @@
     height: calc(100vh - 200px);
 }
 
-/* Menu Section - Reduced width for better search-focused workflow */
+/* Menu Section - 50% width for equal split */
 .menu-section {
-    flex: 1.2;  /* Reduced from flex: 2 for narrower menu pane */
+    flex: 0 0 50%;  /* Fixed 50% width for menu pane */
     background: white;
     border-radius: 12px;
     padding: 20px;
@@ -202,18 +202,25 @@
 
 .menu-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));  /* Responsive 2-3 items per row */
+    gap: 12px;  /* Slightly tighter spacing for cleaner look */
+    max-width: 100%;
 }
 
 .menu-item {
     background: #f8f9fa;
     border: 2px solid #e9ecef;
-    border-radius: 8px;
-    padding: 15px;
+    border-radius: 10px;  /* Slightly more rounded for modern look */
+    padding: 16px 12px;  /* Optimized padding for touch-friendly design */
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: center;
+    position: relative;
+    overflow: hidden;
+    min-height: 85px;  /* Consistent height for grid alignment */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .menu-item:hover {
@@ -226,15 +233,26 @@
 .menu-item-name {
     font-weight: 600;
     color: #2d3748;
-    margin-bottom: 8px;
-    font-size: 0.95rem;
+    margin-bottom: 6px;
+    font-size: 0.85rem;  /* Reduced by ~11% for better fit */
+    line-height: 1.2;
+    word-wrap: break-word;
+    hyphens: auto;
 }
 
 .menu-item-price {
-    font-size: 1.1rem;
+    font-size: 0.95rem;  /* Reduced by ~14% for better proportion */
     font-weight: 700;
     color: #28a745;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
+}
+
+.menu-item-category {
+    font-size: 0.7rem;  /* Reduced by ~12% */
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
 }
 
 .menu-item-price.discounted {
@@ -259,23 +277,16 @@
     font-weight: 600;
 }
 
-.menu-item-category {
-    font-size: 0.8rem;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* Order Section - Increased width for better large order visibility */
+/* Order Section - 50% width for equal split */
 .order-section {
-    flex: 1.8;  /* Increased from flex: 1 for wider billing pane */
+    flex: 0 0 50%;  /* Fixed 50% width for billing pane */
     background: white;
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
-    border-left: 1px solid #e2e8f0; /* Subtle divider */
+    border-right: 1px solid #e2e8f0; /* Subtle divider */
 }
 
 .order-section h3 {
@@ -616,16 +627,109 @@
     color: #c82333;
 }
 
+/* Menu Item Parcel Context Menu */
+.menu-item-parcel-menu {
+    position: absolute;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 1000;
+    overflow: hidden;
+    min-width: 160px;
+    animation: contextMenuAppear 0.2s ease-out;
+}
+
+.menu-parcel-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    color: #2d3748;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.menu-parcel-item:last-child {
+    border-bottom: none;
+}
+
+.menu-parcel-item:hover {
+    background: #f0f9ff;
+    color: #0ea5e9;
+    padding-left: 20px;
+}
+
+.menu-parcel-item[data-charge="0"] {
+    color: #4a5568;
+}
+
+.menu-parcel-item[data-charge="0"]:hover {
+    background: #f7fafc;
+    color: #2d3748;
+}
+
+.menu-parcel-item[data-charge="5"] {
+    color: #059669;
+}
+
+.menu-parcel-item[data-charge="5"]:hover {
+    background: #f0fdf4;
+    color: #047857;
+}
+
+.menu-parcel-item[data-charge="10"] {
+    color: #2563eb;
+}
+
+.menu-parcel-item[data-charge="10"]:hover {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+/* Enhanced Order Item Price Display */
 .order-item-price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
     font-weight: 600;
-    color: #28a745;
-    min-width: 70px;
+    min-width: 90px;  /* Increased width for better layout */
     text-align: right;
+    gap: 2px;  /* Consistent spacing between price elements */
+}
+
+.base-price {
+    color: #64748b;  /* Subtle color for base price */
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.parcel-charge {
+    color: #28a745;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #f0fff4;
+    padding: 1px 4px;
+    border-radius: 3px;
+    border: 1px solid #c3e6cb;
+}
+
+.total-price {
+    color: #2d3748;
+    font-size: 1rem;
+    font-weight: 700;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 3px;
+    margin-top: 2px;
+    min-width: 70px;
 }
 
 .remove-btn {
-    width: 25px;
-    height: 25px;
+    width: 28px;  /* Slightly larger for better accessibility */
+    height: 28px;
     border: none;
     border-radius: 50%;
     background: #dc3545;
@@ -634,11 +738,20 @@
     font-weight: bold;
     font-size: 1.1rem;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
 }
 
 .remove-btn:hover {
     background: #c82333;
     transform: scale(1.1);
+    box-shadow: 0 3px 6px rgba(220, 53, 69, 0.4);
+}
+
+.remove-btn:active {
+    transform: scale(0.95);
 }
 
 /* Order Total */
@@ -697,24 +810,66 @@
     font-weight: 600;
 }
 
-/* Responsive Design for Billing */
+/* Responsive Design for Billing - Enhanced for 50/50 layout */
+@media (max-width: 1200px) {
+    .billing-content {
+        gap: 15px;
+    }
+    
+    .menu-section {
+        flex: 0 0 50%;  /* Maintain 50/50 split on medium screens */
+    }
+    
+    .order-section {
+        flex: 0 0 50%;  /* Maintain 50/50 split on medium screens */
+    }
+    
+    .menu-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));  /* Smaller grid items */
+    }
+}
+
 @media (max-width: 1024px) {
     .billing-content {
         flex-direction: column;
         height: auto;
+        gap: 20px;
     }
     
     .menu-section,
     .order-section {
         flex: none;
+        border-left: none;  /* Remove divider in stacked layout */
+        border-right: none; /* Remove right border too */
     }
     
     .menu-section {
         max-height: 400px;
+        order: 2;  /* Move menu below order in mobile for better workflow */
     }
     
     .order-section {
-        max-height: 300px;
+        max-height: none;
+        order: 1;  /* Order section on top for mobile */
+        border-bottom: 1px solid #e2e8f0;  /* Add bottom divider instead */
+    }
+    
+    .menu-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));  /* Responsive for tablets */
+    }
+    
+    .order-item-main {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .order-item-name {
+        flex-basis: 100%;
+        margin-bottom: 8px;
+    }
+    
+    .parcel-control {
+        min-width: 50px;
     }
 }
 
@@ -727,25 +882,53 @@
     
     .billing-actions {
         justify-content: center;
+        flex-wrap: wrap;
     }
     
     .menu-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));  /* Smaller grid items for mobile */
+        gap: 8px;
     }
     
     .menu-item {
-        padding: 12px;
+        padding: 10px 8px;
+        min-height: 75px;  /* Reduced height for mobile */
+    }
+    
+    .menu-item-name {
+        font-size: 0.8rem;  /* Further reduced for mobile */
+    }
+    
+    .menu-item-price {
+        font-size: 0.9rem;
+    }
+    
+    .menu-item-category {
+        font-size: 0.65rem;
     }
     
     .order-item {
-        flex-wrap: wrap;
-        gap: 5px;
+        padding: 12px;
     }
     
-    .order-item-name {
-        flex-basis: 100%;
-        margin-bottom: 5px;
+    .order-item-main {
+        gap: 6px;
+    }
+    
+    .order-item-controls {
+        gap: 6px;
+    }
+    
+    .qty-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 1rem;
+    }
+    
+    .parcel-cycle-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 1rem;
     }
 }
 
@@ -771,6 +954,27 @@
     .btn {
         width: 100%;
         margin-bottom: 5px;
+    }
+    
+    .order-item-main {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .order-item-controls {
+        justify-content: center;
+    }
+    
+    .order-item-price {
+        align-items: center;
+        text-align: center;
+        min-width: auto;
+    }
+    
+    .parcel-control {
+        justify-content: center;
+        min-width: auto;
     }
 }
 

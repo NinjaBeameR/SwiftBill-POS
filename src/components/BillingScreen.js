@@ -23,6 +23,13 @@ class BillingScreen {
                 this.handleKeyPress(e);
             }
         });
+
+        // Service fee dropdown change handler
+        document.addEventListener('change', (e) => {
+            if (e.target.id === 'service-fee-select') {
+                this.updateTotals();
+            }
+        });
     }
 
     async loadMenu() {
@@ -74,11 +81,86 @@ class BillingScreen {
             <div class="menu-item-category">${item.category}</div>
         `;
 
+        // Left-click to add item
         itemDiv.addEventListener('click', () => {
             this.addItemToOrder(item);
         });
 
+        // Right-click to show parcel charge options
+        itemDiv.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            this.showMenuItemParcelMenu(e, item);
+        });
+
         return itemDiv;
+    }
+
+    // Right-click context menu for menu items (add with parcel charge)
+    showMenuItemParcelMenu(event, item) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Remove any existing menu
+        const existingMenu = document.querySelector('.menu-item-parcel-menu');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
+
+        const menu = document.createElement('div');
+        menu.className = 'menu-item-parcel-menu';
+        menu.innerHTML = `
+            <div class="menu-parcel-item" data-charge="0">Add Item (No Parcel)</div>
+            <div class="menu-parcel-item" data-charge="5">Add Item + ₹5 Parcel</div>
+            <div class="menu-parcel-item" data-charge="10">Add Item + ₹10 Parcel</div>
+        `;
+
+        // Position menu near click
+        menu.style.left = event.pageX + 'px';
+        menu.style.top = event.pageY + 'px';
+
+        // Add event listeners
+        menu.querySelectorAll('.menu-parcel-item').forEach(menuItem => {
+            menuItem.addEventListener('click', () => {
+                const charge = parseInt(menuItem.dataset.charge);
+                this.addItemToOrderWithParcel(item, charge);
+                menu.remove();
+            });
+        });
+
+        // Add to document
+        document.body.appendChild(menu);
+
+        // Remove menu on outside click
+        setTimeout(() => {
+            document.addEventListener('click', () => {
+                if (menu.parentNode) {
+                    menu.remove();
+                }
+            }, { once: true });
+        }, 0);
+    }
+
+    // Add item to order with specific parcel charge
+    addItemToOrderWithParcel(item, parcelCharge) {
+        // Check if item already exists in order
+        const existingItem = this.currentOrder.find(orderItem => orderItem.id === item.id);
+        
+        if (existingItem) {
+            existingItem.quantity += 1;
+            // Update parcel charge if specified
+            if (parcelCharge > 0) {
+                existingItem.parcelCharge = parcelCharge;
+            }
+        } else {
+            this.currentOrder.push({
+                ...item,
+                quantity: 1,
+                parcelCharge: parcelCharge
+            });
+        }
+
+        this.renderOrder();
+        this.updateTotals();
     }
 
     addItemToOrder(item) {

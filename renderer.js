@@ -286,13 +286,9 @@ class POSApp {
     }
 
     setupEventListeners() {
-        // Update button
+        // Update button - will be properly set up by initUpdateNotifications()
         const updateBtn = document.getElementById('update-btn');
-        if (updateBtn) {
-            updateBtn.addEventListener('click', () => {
-                this.checkForUpdates();
-            });
-        } else {
+        if (!updateBtn) {
             console.error('Update button not found!');
         }
 
@@ -308,6 +304,11 @@ class POSApp {
                 console.log('🔒 Counter service disabled by feature flag');
                 alert('Counter service is temporarily disabled. Please use Table Service.');
             }
+        });
+
+        // Home Menu Manager button (reuses existing functionality)
+        document.getElementById('home-menu-manager-btn').addEventListener('click', () => {
+            this.openMenuManager();
         });
 
         // Back buttons
@@ -4342,18 +4343,16 @@ class POSApp {
 
             if (versionCheck.error) {
                 console.error('Version check error:', versionCheck.error);
-                alert(
-                    '❌ Version Check Failed\n\n' +
-                    'Could not check for updates. Please try again later.\n\n' +
-                    'Error: ' + versionCheck.error
-                );
+                // Log error but don't show alert (keeping it simple)
                 return;
             }
 
             if (!versionCheck.hasUpdate) {
                 // Show "already latest" modal
                 console.log(`✅ Already on latest version: v${versionCheck.currentVersion}`);
+                console.log('About to show modal...'); // Debug log
                 this.showAlreadyLatestModal(versionCheck.currentVersion);
+                console.log('Modal method called'); // Debug log
             } else {
                 // Proceed with existing download flow
                 console.log(`🆕 Update available: v${versionCheck.currentVersion} → v${versionCheck.latestVersion}`);
@@ -4366,15 +4365,14 @@ class POSApp {
             updateBtn.textContent = '⟳';
             updateBtn.disabled = false;
             
-            alert(
-                '❌ Update Check Failed\n\n' +
-                'Could not check for updates. Please try again later.'
-            );
+            // Log error but don't show alert (keeping it simple)
         }
     }
 
     // Show modal when already on latest version
     showAlreadyLatestModal(currentVersion) {
+        console.log('showAlreadyLatestModal called with version:', currentVersion); // Debug log
+        
         // Create a simple, non-intrusive modal
         const existingModal = document.getElementById('already-latest-modal');
         if (existingModal) {
@@ -4446,9 +4444,12 @@ class POSApp {
         // Set up update button click handler
         const updateBtn = document.getElementById('update-btn');
         if (updateBtn) {
-            // Remove existing click handlers and add our new handler
-            updateBtn.removeEventListener('click', this.handleUpdateBtnClick);
-            updateBtn.addEventListener('click', this.handleUpdateBtnClick.bind(this));
+            // Remove any existing click handlers by cloning the button
+            const newUpdateBtn = updateBtn.cloneNode(true);
+            updateBtn.parentNode.replaceChild(newUpdateBtn, updateBtn);
+            
+            // Add our new handler
+            newUpdateBtn.addEventListener('click', this.handleUpdateBtnClick.bind(this));
         }
         
         // Start periodic update checks
@@ -4458,40 +4459,11 @@ class POSApp {
     }
 
     /**
-     * Handle update button click - now shows lightweight notification or manual check
+     * Handle update button click - restored to use original update check method
      */
     async handleUpdateBtnClick() {
-        const updateBtn = document.getElementById('update-btn');
-        if (!updateBtn || !this.updateNotificationManager) return;
-
-        // Provide visual feedback
-        const originalText = updateBtn.textContent;
-        updateBtn.textContent = '🔄';
-        updateBtn.disabled = true;
-
-        try {
-            // Perform manual update check
-            const result = await this.updateNotificationManager.manualCheck();
-            
-            // Add visual indicator if update is available
-            if (result.updateAvailable) {
-                updateBtn.classList.add('update-available');
-                updateBtn.title = `Update available: v${result.latestVersion}`;
-            } else {
-                updateBtn.classList.remove('update-available');
-                updateBtn.title = 'Check for Updates';
-            }
-
-        } catch (error) {
-            console.error('Manual update check failed:', error);
-            this.updateNotificationManager.showInfoToast('❌ Check Failed', 'Could not check for updates. Please check your internet connection.');
-        } finally {
-            // Reset button state
-            setTimeout(() => {
-                updateBtn.textContent = originalText;
-                updateBtn.disabled = false;
-            }, 1000);
-        }
+        // Use the original checkForUpdates method which properly shows the modal
+        await this.checkForUpdates();
     }
 
     /**

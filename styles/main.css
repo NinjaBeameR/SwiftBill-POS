@@ -349,6 +349,35 @@ body {
         gap: 10px;
         font-size: 0.8rem;
     }
+    
+    /* Management Tools Responsive */
+    .management-tools-section {
+        margin-top: 40px;
+        padding-top: 25px;
+    }
+    
+    .management-tools-grid {
+        gap: 20px;
+    }
+    
+    .management-card {
+        padding: 25px 20px;
+        min-width: 180px;
+    }
+    
+    .management-icon {
+        font-size: 2.5rem;
+        margin-bottom: 12px;
+    }
+    
+    .management-title {
+        font-size: 1.1rem;
+        margin-bottom: 6px;
+    }
+    
+    .management-description {
+        font-size: 0.85rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -364,6 +393,44 @@ body {
         flex-direction: column;
         gap: 5px;
         text-align: right;
+    }
+    
+    /* Management Tools Mobile */
+    .management-tools-section {
+        margin-top: 30px;
+        padding-top: 20px;
+    }
+    
+    .management-tools-section h3 {
+        font-size: 1.2rem;
+        margin-bottom: 20px;
+    }
+    
+    .management-tools-grid {
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .management-card {
+        padding: 20px 18px;
+        min-width: 160px;
+        max-width: 200px;
+        width: 100%;
+    }
+    
+    .management-icon {
+        font-size: 2.2rem;
+        margin-bottom: 10px;
+    }
+    
+    .management-title {
+        font-size: 1rem;
+        margin-bottom: 5px;
+    }
+    
+    .management-description {
+        font-size: 0.8rem;
     }
 }
 
