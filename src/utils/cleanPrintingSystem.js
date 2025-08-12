@@ -475,6 +475,9 @@ class CleanPrintingSystem {
             ? `Table ${location.number}` 
             : `Counter ${location.number}`;
 
+        // Check if any items have parcel charges
+        const hasParcelItems = items.some(item => item.parcelCharge && item.parcelCharge > 0);
+
         return `
 <!DOCTYPE html>
 <html>
@@ -553,6 +556,7 @@ class CleanPrintingSystem {
     <div class="header">
         <div class="kot-title">${kotTitle}</div>
         <div class="kot-info">${locationText}</div>
+        ${hasParcelItems ? '<div class="kot-info" style="font-weight: bold;">PARCEL</div>' : ''}
         <div class="kot-info">Time: ${this.formatTime(now)}</div>
         <div class="kot-info">Date: ${this.formatDate(now)}</div>
     </div>
@@ -561,9 +565,12 @@ class CleanPrintingSystem {
         ${items.map(item => {
             // SAFETY: Truncate KOT item names for 70mm width
             const safeKotName = item.name.length > 22 ? item.name.substring(0, 19) + '...' : item.name;
+            // Add [PARCEL] marking for items with parcel charges
+            const parcelMark = (item.parcelCharge && item.parcelCharge > 0) ? ' [PARCEL]' : '';
+            const displayName = safeKotName + parcelMark;
             return `
         <div class="item-row">
-            <span class="item-name">${safeKotName}</span>
+            <span class="item-name">${displayName}</span>
             <span class="item-quantity">${item.quantity}x</span>
         </div>
         `;
