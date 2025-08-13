@@ -415,14 +415,6 @@ class CleanPrintingSystem {
                 <span class="item-rate">₹${item.price.toFixed(2)}</span>
                 <span class="item-total">₹${itemTotal.toFixed(2)}</span>
             </div>
-            ${item.parcelCharge ? `
-            <div class="item-row" style="font-size: 12px; color: #666; border: none;">
-                <span class="item-name" style="padding-left: 10px;">+ Parcel Charge</span>
-                <span class="item-qty"></span>
-                <span class="item-rate"></span>
-                <span class="item-total">₹${item.parcelCharge.toFixed(2)}</span>
-            </div>
-            ` : ''}
             `;
         }).join('')}
     </div>

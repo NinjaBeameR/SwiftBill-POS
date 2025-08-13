@@ -3941,18 +3941,11 @@ class POSApp {
                         
                         return `
                         <div class="item-row">
-                            <span class="item-name">${(index + 1)}. ${item.name}${item.parcelCharge > 0 ? ' 📦' : ''}</span>
+                            <span class="item-name">${(index + 1)}. ${item.name}</span>
                             <span class="item-qty">${item.quantity}</span>
                             <span class="item-rate">₹${item.price.toFixed(2)}</span>
                             <span class="item-total">₹${itemSubtotal.toFixed(2)}</span>
                         </div>
-                        ${item.parcelCharge > 0 ? `
-                        <div class="item-row parcel-charge-row">
-                            <span class="item-name">  └ Parcel Charge (₹${item.parcelCharge})</span>
-                            <span class="item-qty">${item.quantity}</span>
-                            <span class="item-rate">₹${item.parcelCharge.toFixed(2)}</span>
-                            <span class="item-total">₹${parcelChargeForItem.toFixed(2)}</span>
-                        </div>` : ''}
                         `;
                     }).join('')}
                 </div>
