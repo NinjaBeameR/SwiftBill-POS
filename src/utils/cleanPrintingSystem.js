@@ -705,111 +705,95 @@ class CleanPrintingSystem {
     }
 
     /**
-     * Print KOT HTML using KOT-specific handler
+     * Print KOT HTML using KOT-specific handler with enhanced silent printing
      */
     async printKOTHTML(htmlContent, documentTitle) {
-        try {
-            // Try silent KOT printing first
-            const { ipcRenderer } = require('electron');
-            const result = await Promise.race([
-                ipcRenderer.invoke('silent-print-kot', htmlContent),  // Correct: KOT handler for KOTs
-                new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Silent print timeout')), 5000)
-                )
-            ]);
+        const maxRetries = 3;
+        let lastError = null;
 
-            if (result && result.success) {
-                this.log(`✅ ${documentTitle} printed silently`);
-                return;
-            }
-        } catch (error) {
-            this.log(`⚠️ Silent print failed: ${error.message}`);
-        }
-
-        // Fallback to popup window
-        try {
-            const printWindow = window.open('', '_blank', 'width=400,height=600,scrollbars=yes');
-            if (printWindow) {
-                printWindow.document.write(htmlContent);
-                printWindow.document.close();
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                this.log(`🖨️ Attempting KOT print (${attempt}/${maxRetries}): ${documentTitle}`);
                 
-                await new Promise((resolve) => {
-                    setTimeout(() => {
-                        try {
-                            printWindow.focus();
-                            printWindow.print();
-                            this.log(`✅ ${documentTitle} popup window opened`);
-                            
-                            setTimeout(() => {
-                                try { printWindow.close(); } catch (e) {}
-                            }, 2000);
-                        } catch (error) {
-                            this.log(`❌ Popup print error: ${error.message}`, 'error');
-                        }
-                        resolve();
-                    }, 500);
-                });
-            } else {
-                throw new Error('Popup blocked');
+                const { ipcRenderer } = require('electron');
+                const result = await Promise.race([
+                    ipcRenderer.invoke('silent-print-kot', htmlContent),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Silent print timeout')), 8000)
+                    )
+                ]);
+
+                if (result && result.success) {
+                    this.log(`✅ ${documentTitle} printed silently on attempt ${attempt}`);
+                    return;
+                } else {
+                    throw new Error(result?.error || 'Print failed without specific error');
+                }
+            } catch (error) {
+                lastError = error;
+                this.log(`⚠️ KOT print attempt ${attempt} failed: ${error.message}`);
+                
+                if (attempt < maxRetries) {
+                    // Exponential backoff: wait longer between retries
+                    const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+                    this.log(`⏳ Waiting ${waitTime/1000}s before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
             }
-        } catch (error) {
-            this.log(`❌ All KOT print methods failed: ${error.message}`, 'error');
-            throw error;
         }
+
+        // All retry attempts failed - log error but don't throw to prevent app crash
+        this.log(`❌ KOT print failed after ${maxRetries} attempts: ${lastError?.message}`, 'error');
+        this.log(`❌ Final error for ${documentTitle}: Print system unavailable`, 'error');
+        
+        // Return error info instead of throwing to maintain app stability
+        return { success: false, error: lastError?.message || 'Print failed after all retries' };
     }
 
     /**
-     * Print Bill HTML using Bill-specific handler
+     * Print Bill HTML using Bill-specific handler with enhanced silent printing
      */
     async printBillHTML(htmlContent, documentTitle) {
-        try {
-            // Try silent BILL printing first
-            const { ipcRenderer } = require('electron');
-            const result = await Promise.race([
-                ipcRenderer.invoke('silent-print-bill', htmlContent),  // FIXED: Bill handler for bills
-                new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Silent print timeout')), 5000)
-                )
-            ]);
+        const maxRetries = 3;
+        let lastError = null;
 
-            if (result && result.success) {
-                this.log(`✅ ${documentTitle} printed silently`);
-                return;
-            }
-        } catch (error) {
-            this.log(`⚠️ Silent print failed: ${error.message}`);
-        }
-
-        // Fallback to popup window
-        try {
-            const printWindow = window.open('', '_blank', 'width=400,height=600,scrollbars=yes');
-            if (printWindow) {
-                printWindow.document.write(htmlContent);
-                printWindow.document.close();
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                this.log(`🧾 Attempting Bill print (${attempt}/${maxRetries}): ${documentTitle}`);
                 
-                await new Promise((resolve) => {
-                    setTimeout(() => {
-                        try {
-                            printWindow.focus();
-                            printWindow.print();
-                            this.log(`✅ ${documentTitle} popup window opened`);
-                            
-                            setTimeout(() => {
-                                try { printWindow.close(); } catch (e) {}
-                            }, 2000);
-                        } catch (error) {
-                            this.log(`❌ Popup print error: ${error.message}`, 'error');
-                        }
-                        resolve();
-                    }, 500);
-                });
-            } else {
-                throw new Error('Popup blocked');
+                const { ipcRenderer } = require('electron');
+                const result = await Promise.race([
+                    ipcRenderer.invoke('silent-print-bill', htmlContent),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Silent print timeout')), 8000)
+                    )
+                ]);
+
+                if (result && result.success) {
+                    this.log(`✅ ${documentTitle} printed silently on attempt ${attempt}`);
+                    return;
+                } else {
+                    throw new Error(result?.error || 'Print failed without specific error');
+                }
+            } catch (error) {
+                lastError = error;
+                this.log(`⚠️ Bill print attempt ${attempt} failed: ${error.message}`);
+                
+                if (attempt < maxRetries) {
+                    // Exponential backoff: wait longer between retries
+                    const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+                    this.log(`⏳ Waiting ${waitTime/1000}s before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
             }
-        } catch (error) {
-            this.log(`❌ All bill print methods failed: ${error.message}`, 'error');
-            throw error;
         }
+
+        // All retry attempts failed - log error but don't throw to prevent app crash
+        this.log(`❌ Bill print failed after ${maxRetries} attempts: ${lastError?.message}`, 'error');
+        this.log(`❌ Final error for ${documentTitle}: Print system unavailable`, 'error');
+        
+        // Return error info instead of throwing to maintain app stability
+        return { success: false, error: lastError?.message || 'Print failed after all retries' };
     }
 
     // ============================================

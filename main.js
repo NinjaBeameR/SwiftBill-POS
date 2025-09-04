@@ -597,17 +597,17 @@ ipcMain.handle('silent-print-kot', async (event, kotContent) => {
     const printResult = await new Promise((resolve, reject) => {
       let resolved = false;
       
-      // Set a shorter timeout for faster fallback
+      // Increased timeout for better reliability
       const timeout = setTimeout(() => {
         if (!resolved) {
           resolved = true;
-          console.log('⏰ KOT print timeout after 8 seconds');
+          console.log('⏰ KOT print timeout after 10 seconds');
           if (printWindow && !printWindow.isDestroyed()) {
             printWindow.close();
           }
-          resolve({ success: false, error: 'Print timeout after 8 seconds' });
+          resolve({ success: false, error: 'Print timeout after 10 seconds' });
         }
-      }, 8000);
+      }, 10000); // Increased from 8000 to 10000
       
       // Load content and setup print immediately
       printWindow.webContents.once('did-finish-load', () => {
@@ -726,17 +726,17 @@ ipcMain.handle('silent-print-bill', async (event, billContent) => {
     const printResult = await new Promise((resolve, reject) => {
       let resolved = false;
       
-      // Set a shorter timeout for faster fallback
+      // Increased timeout for better reliability
       const timeout = setTimeout(() => {
         if (!resolved) {
           resolved = true;
-          console.log('⏰ Bill print timeout after 8 seconds');
+          console.log('⏰ Bill print timeout after 10 seconds');
           if (printWindow && !printWindow.isDestroyed()) {
             printWindow.close();
           }
-          resolve({ success: false, error: 'Print timeout after 8 seconds' });
+          resolve({ success: false, error: 'Print timeout after 10 seconds' });
         }
-      }, 8000);
+      }, 10000); // Increased from 8000 to 10000
       
       // Load content and setup print immediately
       printWindow.webContents.once('did-finish-load', () => {
@@ -822,7 +822,7 @@ ipcMain.handle('silent-print-bill', async (event, billContent) => {
 
     return printResult;
   } catch (error) {
-    console.error('❌ Silent bill print error:', error);
+    console.error('❌ Silent Bill print error:', error);
     if (printWindow && !printWindow.isDestroyed()) {
       printWindow.close();
     }
