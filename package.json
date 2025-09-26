@@ -1,0 +1,132 @@
+{
+  "name": "swiftbill-pos",
+  "version": "1.0.24",
+  "description": "Restaurant POS Billing Software",
+  "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NinjaBeameR/SwiftBill-POS.git"
+  },
+  "homepage": "https://github.com/NinjaBeameR/SwiftBill-POS#readme",
+  "bugs": {
+    "url": "https://github.com/NinjaBeameR/SwiftBill-POS/issues"
+  },
+  "keywords": [
+    "pos",
+    "restaurant",
+    "billing",
+    "electron",
+    "thermal-printing",
+    "desktop-app"
+  ],
+  "author": "NMD",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "npm run build-clean && electron-builder",
+    "build-clean": "npm install --production=false",
+    "build-win": "electron-builder --win",
+    "build-portable": "electron-builder --win portable",
+    "build-installer": "electron-builder --win nsis",
+    "dist": "npm run build-portable && npm run build-installer",
+    "package": "electron-packager . \"SwiftBill-POS\" --platform win32 --arch x64 --out dist --ignore dist --ignore .git --app-version 1.0.0",
+    "release": "electron-builder --win --publish always",
+    "release-draft": "electron-builder --win --publish never",
+    "auto-release": "node -e \"console.log('Use: npm run release-patch|minor|major for automated releases')\"",
+    "release-patch": "node scripts/auto-version.js patch",
+    "release-minor": "node scripts/auto-version.js minor",
+    "release-major": "node scripts/auto-version.js major",
+    "manual-release": "node scripts/manual-release.js",
+    "verify-release": "node scripts/verify-release-system.js"
+  },
+  "dependencies": {
+    "pdfkit": "^0.13.0",
+    "escpos": "^3.0.0-alpha.6",
+    "pdf-to-printer": "^5.6.0",
+    "serialport": "^10.5.0"
+  },
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.13.3",
+    "electron-packager": "^17.1.2"
+  },
+  "build": {
+    "appId": "com.swiftbillpos.restaurant",
+    "productName": "SwiftBill-POS",
+    "copyright": "Copyright © 2025 NMD",
+    "includeSubNodeModules": true,
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "NinjaBeameR",
+        "repo": "SwiftBill-POS"
+      }
+    ],
+    "files": [
+      "main.js",
+      "renderer.js",
+      "index.html",
+      "package.json",
+      "src/**/*",
+      "styles/**/*",
+      "!dist/**/*",
+      "!.git/**/*",
+      "!README.md",
+      "!*.md",
+      "!build-exe.*",
+      "!test-*",
+      "!.*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "publisherName": "SwiftBill-POS",
+      "requestedExecutionLevel": "asInvoker",
+      "sign": null,
+      "verifyUpdateCodeSignature": false,
+      "signAndEditExecutable": false,
+      "signDlls": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SwiftBill-POS",
+      "runAfterFinish": true,
+      "differentialPackage": true,
+      "artifactName": "SwiftSetup.exe"
+    },
+    "portable": {
+      "artifactName": "SwiftBill-POS-Portable-${version}.${ext}"
+    },
+    "extraResources": [
+      {
+        "from": "src/storage/",
+        "to": "storage/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start POS Application",
+			"type": "shell",
+			"command": "npm start",
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test POS Application",
+			"type": "shell",
+			"command": "npm start",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Test Fixed Printing",
+			"type": "shell",
+			"command": "npm start",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Test Print Fix",
+			"type": "shell",
+			"command": "npm start",
+			"isBackground": true,
+			"group": "build"
+		}
+	]
+}
