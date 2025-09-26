@@ -388,10 +388,10 @@ class POSApp {
             }
         });
 
-        // Print button
-        document.getElementById('print-order').addEventListener('click', () => {
-            this.printOrder();
-        });
+        // Print button - OLD PRINT SYSTEM (DISABLED)
+        // document.getElementById('print-order').addEventListener('click', () => {
+        //     this.printOrder();
+        // });
 
         // PrintNew button - NEW PRINTING SYSTEM
         document.getElementById('print-new').addEventListener('click', () => {
@@ -2742,10 +2742,10 @@ class POSApp {
         }
     }
 
-    // NEW ROBUST PRINTING SYSTEM
+    // NEW ROBUST PRINTING SYSTEM - SILENT AUTOMATIC PRINTING
     async printOrderNew() {
         if (this.currentOrder.length === 0) {
-            alert('No items in order to print');
+            console.log('❌ No items in order to print');
             return;
         }
 
@@ -2757,13 +2757,7 @@ class POSApp {
             await this.initNewPrintHandler();
             
             if (!this.newPrintHandler) {
-                // Calculate totals for display
-                const subtotal = this.currentOrder.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                const serviceFee = subtotal * (this.serviceFeePercentage / 100);
-                const tax = (subtotal + serviceFee) * 0.05;
-                const total = subtotal + serviceFee + tax;
-                
-                alert(`NEW Print System Initialization Failed\n\nOrder Details:\n- Items: ${this.currentOrder.length}\n- Subtotal: ₹${subtotal.toFixed(2)}\n- Service Fee: ₹${serviceFee.toFixed(2)}\n- Tax: ₹${tax.toFixed(2)}\n- Total: ₹${total.toFixed(2)}\n\nPlease check console for errors.`);
+                console.error('❌ NEW Print System Initialization Failed');
                 return;
             }
         }
@@ -2771,7 +2765,7 @@ class POSApp {
         try {
             console.log('🚀 Using NEW ROBUST Printing System...');
             
-            // Show user-friendly printing feedback
+            // Show silent printing feedback
             const printButton = document.getElementById('print-new');
             const originalText = printButton.textContent;
             printButton.textContent = '🖨 Printing...';
@@ -2815,12 +2809,12 @@ class POSApp {
             console.log('💰 Bill Result:', billResult);
 
             if (kotResult.success && billResult.success) {
-                // Success feedback
-                printButton.textContent = '✅ Printed NEW!';
+                // Silent success feedback - just update button briefly
+                printButton.textContent = '✅ Printed!';
                 setTimeout(() => {
                     printButton.textContent = originalText;
                     printButton.disabled = false;
-                }, 2000);
+                }, 1500);
                 
                 console.log('✅ Order printed successfully with NEW ROBUST System');
                 
@@ -2855,14 +2849,15 @@ class POSApp {
             console.error('❌ NEW Print error:', error);
             
             const printButton = document.getElementById('print-new');
-            printButton.textContent = '❌ NEW Print Failed';
+            printButton.textContent = '❌ Print Failed';
             printButton.disabled = false;
             
             setTimeout(() => {
-                printButton.textContent = '🚀 PrintNew';
+                printButton.textContent = '� Print';
             }, 3000);
             
-            alert('NEW Print failed: ' + error.message);
+            // Silent error handling - no popup alert
+            console.error('Print failed:', error.message);
         }
     }
 

@@ -738,7 +738,11 @@ class NewPrintHandler {
                 setTimeout(() => {
                     try {
                         printFrame.contentWindow.focus();
-                        printFrame.contentWindow.print();
+                        
+                        // Use Electron's silent printing instead of browser print dialog
+                        const { ipcRenderer } = require('electron');
+                        const ipcHandler = type === 'KOT' ? 'silent-print-kot' : 'silent-print-bill';
+                        ipcRenderer.invoke(ipcHandler, content);
                         
                         // Clean up after printing
                         setTimeout(() => {
